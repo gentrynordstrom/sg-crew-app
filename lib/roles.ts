@@ -7,11 +7,19 @@ export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Admin",
 };
 
+/**
+ * Badge color styles tuned for the moss/cream brand palette — muted earth
+ * tones that sit comfortably on a dark moss background without clashing.
+ */
 export const ROLE_BADGE_CLASSES: Record<Role, string> = {
-  CAPTAIN: "bg-blue-100 text-blue-900 ring-blue-200",
-  DECKHAND: "bg-emerald-100 text-emerald-900 ring-emerald-200",
-  MECHANIC: "bg-amber-100 text-amber-900 ring-amber-200",
-  ADMIN: "bg-purple-100 text-purple-900 ring-purple-200",
+  CAPTAIN:
+    "bg-sky-900/50 text-sky-100 ring-sky-300/40",
+  DECKHAND:
+    "bg-emerald-900/50 text-emerald-100 ring-emerald-300/40",
+  MECHANIC:
+    "bg-amber-900/50 text-amber-100 ring-amber-300/40",
+  ADMIN:
+    "bg-brand-brass-700/50 text-brand-brass-100 ring-brand-brass-300/40",
 };
 
 export type Feature =

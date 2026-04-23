@@ -31,7 +31,10 @@ export function UserTable({
   } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function runAction(fn: (fd: FormData) => Promise<ActionResult>, fd: FormData) {
+  function runAction(
+    fn: (fd: FormData) => Promise<ActionResult>,
+    fd: FormData
+  ) {
     startTransition(async () => {
       const result = await fn(fd);
       setFlash(
@@ -49,17 +52,17 @@ export function UserTable({
           role="status"
           className={`mb-4 rounded-lg px-3 py-2 text-sm ring-1 ${
             flash.kind === "ok"
-              ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-              : "bg-red-50 text-red-700 ring-red-200"
+              ? "bg-emerald-900/40 text-emerald-100 ring-emerald-400/40"
+              : "bg-red-900/40 text-red-200 ring-red-400/40"
           }`}
         >
           {flash.text}
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <div className="overflow-hidden rounded-2xl border border-brand-moss-500/40 bg-brand-moss-800/60">
+        <table className="min-w-full divide-y divide-brand-moss-500/40 text-sm">
+          <thead className="bg-brand-moss-900/50 text-left text-xs font-semibold uppercase tracking-[0.15em] text-brand-cream-400">
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Phone</th>
@@ -68,12 +71,12 @@ export function UserTable({
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-brand-moss-500/30">
             {users.length === 0 && (
               <tr>
                 <td
                   colSpan={5}
-                  className="px-4 py-6 text-center text-slate-500"
+                  className="px-4 py-6 text-center text-brand-cream-400"
                 >
                   No users yet.
                 </td>
@@ -85,15 +88,15 @@ export function UserTable({
               const isSelf = u.id === currentAdminId;
               return (
                 <tr key={u.id} className="align-middle">
-                  <td className="px-4 py-3 font-medium text-brand-navy">
+                  <td className="px-4 py-3 font-medium text-brand-cream-100">
                     {u.name}
                     {isSelf && (
-                      <span className="ml-2 text-xs text-slate-400">
+                      <span className="ml-2 text-xs text-brand-cream-500">
                         (you)
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">
+                  <td className="px-4 py-3 text-brand-cream-300">
                     {formatPhone(u.phone)}
                   </td>
                   <td className="px-4 py-3">
@@ -101,15 +104,15 @@ export function UserTable({
                   </td>
                   <td className="px-4 py-3">
                     {!u.isActive ? (
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
+                      <span className="inline-flex items-center rounded-full bg-brand-moss-900/60 px-2.5 py-1 text-xs font-semibold text-brand-cream-400 ring-1 ring-inset ring-brand-moss-400/40">
                         Inactive
                       </span>
                     ) : isLocked ? (
-                      <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">
+                      <span className="inline-flex items-center rounded-full bg-red-900/40 px-2.5 py-1 text-xs font-semibold text-red-200 ring-1 ring-inset ring-red-400/40">
                         Locked
                       </span>
                     ) : (
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                      <span className="inline-flex items-center rounded-full bg-emerald-900/40 px-2.5 py-1 text-xs font-semibold text-emerald-100 ring-1 ring-inset ring-emerald-400/40">
                         Active
                       </span>
                     )}
@@ -121,7 +124,7 @@ export function UserTable({
                         onClick={() =>
                           setEditingId(editingId === u.id ? null : u.id)
                         }
-                        className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        className="rounded-full border border-brand-moss-400/50 bg-brand-moss-700/60 px-3 py-1.5 text-xs font-medium text-brand-cream-200 hover:border-brand-brass-400/60 hover:text-brand-brass-200"
                       >
                         {editingId === u.id ? "Close" : "Edit"}
                       </button>
@@ -134,7 +137,7 @@ export function UserTable({
                             fd.set("id", u.id);
                             runAction(unlockUser, fd);
                           }}
-                          className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100"
+                          className="rounded-full border border-amber-400/50 bg-amber-900/30 px-3 py-1.5 text-xs font-medium text-amber-100 hover:bg-amber-900/50"
                         >
                           Unlock
                         </button>
@@ -150,8 +153,8 @@ export function UserTable({
                           }}
                           className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
                             u.isActive
-                              ? "border-red-300 bg-white text-red-700 hover:bg-red-50"
-                              : "border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50"
+                              ? "border-red-400/50 bg-red-900/20 text-red-200 hover:bg-red-900/40"
+                              : "border-emerald-400/50 bg-emerald-900/20 text-emerald-100 hover:bg-emerald-900/40"
                           }`}
                         >
                           {u.isActive ? "Deactivate" : "Reactivate"}
@@ -167,8 +170,8 @@ export function UserTable({
       </div>
 
       {editingId && (
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-4 text-lg font-semibold text-brand-navy">
+        <div className="mt-6 rounded-2xl border border-brand-moss-500/40 bg-brand-moss-800/60 p-5">
+          <h3 className="mb-4 text-lg font-semibold text-brand-cream-100">
             Edit user
           </h3>
           <UserForm

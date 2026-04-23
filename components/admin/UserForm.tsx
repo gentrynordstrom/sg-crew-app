@@ -21,6 +21,12 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "ADMIN", label: "Admin" },
 ];
 
+const INPUT_CLASS =
+  "mt-1 w-full rounded-lg border border-brand-moss-400/50 bg-brand-moss-900/60 px-3 py-2 text-base text-brand-cream-100 placeholder:text-brand-cream-600 shadow-sm focus:border-brand-brass-400 focus:outline-none focus:ring-2 focus:ring-brand-brass-400/30";
+
+const LABEL_CLASS =
+  "block text-sm font-medium text-brand-cream-300";
+
 export function UserForm({ mode, user, onDone }: UserFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -52,20 +58,13 @@ export function UserForm({ mode, user, onDone }: UserFormProps) {
   }
 
   return (
-    <form
-      id="user-form"
-      action={handleSubmit}
-      className="space-y-4"
-    >
+    <form id="user-form" action={handleSubmit} className="space-y-4">
       {mode === "edit" && user && (
         <input type="hidden" name="id" value={user.id} />
       )}
 
       <div>
-        <label
-          htmlFor="name"
-          className="block text-sm font-medium text-slate-700"
-        >
+        <label htmlFor="name" className={LABEL_CLASS}>
           Full name
         </label>
         <input
@@ -74,15 +73,12 @@ export function UserForm({ mode, user, onDone }: UserFormProps) {
           type="text"
           required
           defaultValue={user?.name ?? ""}
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow-sm focus:border-brand-sea focus:outline-none focus:ring-2 focus:ring-brand-sea/30"
+          className={INPUT_CLASS}
         />
       </div>
 
       <div>
-        <label
-          htmlFor="phone"
-          className="block text-sm font-medium text-slate-700"
-        >
+        <label htmlFor="phone" className={LABEL_CLASS}>
           Phone number
         </label>
         <input
@@ -93,18 +89,15 @@ export function UserForm({ mode, user, onDone }: UserFormProps) {
           required
           placeholder="(555) 555-5555"
           defaultValue={user?.phone ?? ""}
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow-sm focus:border-brand-sea focus:outline-none focus:ring-2 focus:ring-brand-sea/30"
+          className={INPUT_CLASS}
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-brand-cream-500">
           Any format. Non-digits are stripped. PIN is always the last 4 digits.
         </p>
       </div>
 
       <div>
-        <label
-          htmlFor="role"
-          className="block text-sm font-medium text-slate-700"
-        >
+        <label htmlFor="role" className={LABEL_CLASS}>
           Role
         </label>
         <select
@@ -112,7 +105,7 @@ export function UserForm({ mode, user, onDone }: UserFormProps) {
           name="role"
           required
           defaultValue={user?.role ?? ""}
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base shadow-sm focus:border-brand-sea focus:outline-none focus:ring-2 focus:ring-brand-sea/30"
+          className={INPUT_CLASS}
         >
           <option value="" disabled>
             Select a role
@@ -128,7 +121,7 @@ export function UserForm({ mode, user, onDone }: UserFormProps) {
       {error && (
         <div
           role="alert"
-          className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200"
+          className="rounded-lg bg-red-900/40 px-3 py-2 text-sm text-red-200 ring-1 ring-red-400/40"
         >
           {error}
         </div>
@@ -136,7 +129,7 @@ export function UserForm({ mode, user, onDone }: UserFormProps) {
       {success && (
         <div
           role="status"
-          className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 ring-1 ring-emerald-200"
+          className="rounded-lg bg-emerald-900/40 px-3 py-2 text-sm text-emerald-100 ring-1 ring-emerald-400/40"
         >
           {success}
         </div>
@@ -145,7 +138,7 @@ export function UserForm({ mode, user, onDone }: UserFormProps) {
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex min-h-touch items-center justify-center rounded-full bg-brand-navy px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-sea disabled:opacity-50"
+        className="inline-flex min-h-touch items-center justify-center rounded-full bg-brand-brass-400 px-6 py-2.5 text-sm font-semibold text-brand-moss-800 shadow-sm transition hover:bg-brand-brass-300 disabled:opacity-50"
       >
         {isPending
           ? "Saving…"

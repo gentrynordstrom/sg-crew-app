@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SG Crew",
-  description: "Sainte Genevieve crew app",
+  description: "Sainte Genevieve Riverboat crew app",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -12,15 +12,16 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icon-192.png", sizes: "192x192" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b2340",
+  themeColor: "#303820",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

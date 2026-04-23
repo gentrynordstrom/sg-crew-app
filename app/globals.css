@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html,
@@ -12,10 +12,34 @@ body {
 }
 
 body {
-  @apply bg-brand-foam text-slate-900 antialiased;
+  @apply bg-brand-moss-700 text-brand-cream-200 antialiased;
 }
 
-/* Remove focus ring flash for mouse users, keep for keyboard */
+::selection {
+  background-color: theme("colors.brand.brass.400");
+  color: theme("colors.brand.moss.800");
+}
+
 :focus:not(:focus-visible) {
   outline: none;
+}
+
+/* Shake animation used by <PinPad /> on incorrect PIN */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
 }

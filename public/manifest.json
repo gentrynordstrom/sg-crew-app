@@ -1,13 +1,13 @@
 {
-  "name": "SG Crew",
+  "name": "Sainte Genevieve Crew",
   "short_name": "SG Crew",
-  "description": "Sainte Genevieve crew app",
+  "description": "Sainte Genevieve Riverboat crew app",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f4f7fb",
-  "theme_color": "#0b2340",
+  "background_color": "#303820",
+  "theme_color": "#303820",
   "icons": [
     {
       "src": "/icon-192.png",

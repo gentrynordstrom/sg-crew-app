@@ -17,11 +17,6 @@ export function PinPad({ userId, userName }: PinPadProps) {
   const router = useRouter();
   const submittingRef = useRef(false);
 
-  const reset = useCallback(() => {
-    setPin("");
-    setStatus("idle");
-  }, []);
-
   const submit = useCallback(
     async (value: string) => {
       if (submittingRef.current) return;
@@ -47,7 +42,6 @@ export function PinPad({ userId, userName }: PinPadProps) {
           setErrorMessage(msg);
           setStatus("error");
           setPin("");
-          // let the shake animation play before accepting input again
           setTimeout(() => setStatus("idle"), 600);
         } else {
           router.replace("/");
@@ -83,11 +77,15 @@ export function PinPad({ userId, userName }: PinPadProps) {
 
   return (
     <div className="flex flex-col items-center">
-      <p className="text-sm uppercase tracking-wide text-slate-500">
+      <p className="text-xs uppercase tracking-[0.2em] text-brand-cream-400">
         Signing in as
       </p>
-      <h1 className="mt-1 text-2xl font-bold text-brand-navy">{userName}</h1>
-      <p className="mt-4 text-slate-600">Enter your 4-digit PIN</p>
+      <h1 className="mt-1 text-2xl font-semibold text-brand-cream-100">
+        {userName}
+      </h1>
+      <p className="mt-4 text-sm text-brand-cream-300">
+        Enter your 4-digit PIN
+      </p>
 
       <div
         className={`mt-6 flex gap-4 ${
@@ -102,29 +100,33 @@ export function PinPad({ userId, userName }: PinPadProps) {
               key={i}
               className={`h-4 w-4 rounded-full ring-2 ring-inset transition ${
                 filled
-                  ? "bg-brand-navy ring-brand-navy"
-                  : "bg-white ring-slate-300"
+                  ? "bg-brand-brass-400 ring-brand-brass-400"
+                  : "bg-transparent ring-brand-moss-400"
               }`}
             />
           );
         })}
       </div>
 
-      <div
-        role="alert"
-        className="mt-4 min-h-5 text-sm text-red-600"
-      >
+      <div role="alert" className="mt-4 min-h-5 text-sm text-red-300">
         {errorMessage ?? ""}
       </div>
 
       <div className="mt-6 grid w-full max-w-xs grid-cols-3 gap-3">
         {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-          <KeypadButton key={d} onClick={() => append(d)} disabled={status === "submitting"}>
+          <KeypadButton
+            key={d}
+            onClick={() => append(d)}
+            disabled={status === "submitting"}
+          >
             {d}
           </KeypadButton>
         ))}
         <div aria-hidden />
-        <KeypadButton onClick={() => append("0")} disabled={status === "submitting"}>
+        <KeypadButton
+          onClick={() => append("0")}
+          disabled={status === "submitting"}
+        >
           0
         </KeypadButton>
         <KeypadButton
@@ -137,26 +139,8 @@ export function PinPad({ userId, userName }: PinPadProps) {
       </div>
 
       {status === "submitting" && (
-        <p className="mt-6 text-sm text-slate-500">Signing in…</p>
+        <p className="mt-6 text-sm text-brand-cream-400">Signing in…</p>
       )}
-
-      <button
-        type="button"
-        onClick={reset}
-        className="mt-8 text-sm text-slate-500 underline-offset-4 hover:underline"
-      >
-        Not you? Go back
-      </button>
-
-      <style jsx global>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-6px); }
-          40% { transform: translateX(6px); }
-          60% { transform: translateX(-4px); }
-          80% { transform: translateX(4px); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -178,7 +162,7 @@ function KeypadButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      className="flex h-16 items-center justify-center rounded-2xl bg-white text-2xl font-semibold text-brand-navy shadow-sm ring-1 ring-slate-200 transition active:scale-95 active:bg-slate-100 disabled:opacity-40"
+      className="flex h-16 items-center justify-center rounded-2xl border border-brand-moss-500/50 bg-brand-moss-600/60 text-2xl font-semibold text-brand-cream-100 shadow-sm transition active:scale-95 active:bg-brand-moss-500 hover:bg-brand-moss-600 hover:border-brand-brass-400/60 disabled:opacity-40 disabled:active:scale-100"
     >
       {children}
     </button>
