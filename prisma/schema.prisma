@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  CAPTAIN
+  DECKHAND
+  MECHANIC
+  ADMIN
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String
+  phone           String    @unique
+  pinHash         String    @map("pin_hash")
+  role            Role
+  isActive        Boolean   @default(true) @map("is_active")
+  failedAttempts  Int       @default(0) @map("failed_attempts")
+  lockedUntil     DateTime? @map("locked_until")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@map("users")
+}
