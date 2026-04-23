@@ -7,7 +7,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { derivePinFromPhone, isValidPhone, normalizePhone } from "@/lib/phone";
 
-const VALID_ROLES: Role[] = ["CAPTAIN", "DECKHAND", "MECHANIC", "ADMIN"];
+const VALID_ROLES: Role[] = [
+  "CAPTAIN",
+  "DECKHAND",
+  "MECHANIC",
+  "HOSPITALITY",
+  "ADMIN",
+];
 
 export type ActionResult =
   | { ok: true; message?: string }

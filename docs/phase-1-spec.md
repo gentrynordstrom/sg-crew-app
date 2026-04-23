@@ -78,6 +78,7 @@ enum Role {
   CAPTAIN
   DECKHAND
   MECHANIC
+  HOSPITALITY
   ADMIN
 }
 
