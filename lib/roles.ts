@@ -71,7 +71,7 @@ const ALL_TILES: TileDef[] = [
     feature: "time-tracking",
     label: "Time Tracking",
     description: "Clock in and out of shifts.",
-    href: "/coming-soon",
+    href: "/time",
   },
   {
     feature: "sops",

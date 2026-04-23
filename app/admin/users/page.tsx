@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { UserForm } from "@/components/admin/UserForm";
 import { UserTable } from "@/components/admin/UserTable";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { SignOutButton } from "@/components/SignOutButton";
 import { Logo } from "@/components/Logo";
 
@@ -47,6 +48,8 @@ export default async function AdminUsersPage() {
           </div>
           <SignOutButton />
         </header>
+
+        <AdminNav />
 
         <section className="mb-10 rounded-2xl border border-brand-moss-500/40 bg-brand-moss-800/60 p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold text-brand-cream-100">

@@ -16,6 +16,11 @@ enum Role {
   ADMIN
 }
 
+enum TimeEntryStatus {
+  OPEN
+  LOCKED
+}
+
 model User {
   id              String    @id @default(cuid())
   name            String
@@ -29,6 +34,35 @@ model User {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
+  timeEntries     TimeEntry[] @relation("TimeEntryUser")
+  lockedEntries   TimeEntry[] @relation("TimeEntryLockedBy")
+
   @@index([isActive])
   @@map("users")
+}
+
+model TimeEntry {
+  id            String          @id @default(cuid())
+  userId        String          @map("user_id")
+  user          User            @relation("TimeEntryUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  clockInAt     DateTime        @map("clock_in_at")
+  clockOutAt    DateTime?       @map("clock_out_at")
+  breakStartAt  DateTime?       @map("break_start_at")
+  breakEndAt    DateTime?       @map("break_end_at")
+
+  note          String?
+
+  status        TimeEntryStatus @default(OPEN)
+  lockedAt      DateTime?       @map("locked_at")
+  lockedById    String?         @map("locked_by_id")
+  lockedBy      User?           @relation("TimeEntryLockedBy", fields: [lockedById], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt       @map("updated_at")
+
+  @@index([userId, clockInAt])
+  @@index([status])
+  @@index([clockInAt])
+  @@map("time_entries")
 }
