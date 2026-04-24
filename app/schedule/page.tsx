@@ -153,7 +153,7 @@ export default async function SchedulePage() {
                                     Event departs at {formatEventTime(ev.startTime)}
                                   </p>
                                 )}
-                              {s.roleForShift && s.roleForShift !== s.user.role && (
+                              {s.roleForShift && s.roleForShift !== user.role && (
                                 <p className="mt-1 text-xs font-medium opacity-80">
                                   Working as: {ROLE_LABELS[s.roleForShift]}
                                 </p>
