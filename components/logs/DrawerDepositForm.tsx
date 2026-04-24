@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createDepositEntry } from "@/app/drawer-close/actions";
 import { DRAWER_CLOSE } from "@/lib/monday-schema";
 import { TextareaField } from "./FormField";
@@ -24,7 +25,9 @@ export function DrawerDepositForm({
   defaultDate,
   defaultDepositedBy,
 }: DrawerDepositFormProps) {
+  const router = useRouter();
   const [deposited, setDeposited] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
 
   const depositedAmt = parseFloat(deposited) || 0;
   const depositVariance = depositedAmt - toDeposit;
@@ -33,12 +36,26 @@ export function DrawerDepositForm({
   const varianceColor = depositVariance < 0 ? "text-red-400" : "text-amber-300";
 
   async function handleSubmit(fd: FormData) {
-    await createDepositEntry(itemId, fd);
+    setFormError(null);
+    try {
+      const result = await createDepositEntry(itemId, fd);
+      if (result?.error) { setFormError(result.error); return; }
+      router.push("/drawer-close");
+      router.refresh();
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+    }
   }
 
   return (
     <form action={handleSubmit} className="space-y-5">
       <input type="hidden" name="toDeposit" value={toDeposit} />
+
+      {formError && (
+        <div className="rounded-xl border border-red-700/40 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+          {formError}
+        </div>
+      )}
 
       {/* To Deposit (read-only) */}
       <div className="rounded-xl bg-brand-moss-800/60 px-4 py-3 ring-1 ring-brand-brass-500/30">

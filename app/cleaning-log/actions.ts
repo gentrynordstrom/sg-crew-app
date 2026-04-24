@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { mondayQuery, mondayUploadFile } from "@/lib/monday";
@@ -66,5 +65,4 @@ export async function createCleaningEntry(
   }
 
   revalidatePath("/cleaning-log");
-  redirect("/cleaning-log");
 }

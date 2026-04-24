@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { mondayQuery } from "@/lib/monday";
@@ -63,5 +62,4 @@ export async function createCruiseEntry(
   }
 
   revalidatePath("/cruise-log");
-  redirect("/cruise-log");
 }

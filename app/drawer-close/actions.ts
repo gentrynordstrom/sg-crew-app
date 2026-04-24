@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireRole, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -267,12 +266,14 @@ export async function createDrawerCloseEntry(
   }
 
   revalidatePath("/drawer-close");
-  redirect("/drawer-close");
 }
 
 // ─── Admin deposit submission ─────────────────────────────────────────────────
 
-export async function createDepositEntry(itemId: string, fd: FormData) {
+export async function createDepositEntry(
+  itemId: string,
+  fd: FormData
+): Promise<{ error: string } | undefined> {
   const user = await requireAdmin();
 
   const depositedAmount = parseNum(fd.get("deposited"));
@@ -297,22 +298,25 @@ export async function createDepositEntry(itemId: string, fd: FormData) {
     [DRAWER_CLOSE.columns.adminReviewNotes.id]: notes ? longTextValue(notes) : undefined,
   });
 
-  await mondayQuery(
-    `mutation ($itemId: ID!, $boardId: ID!, $vals: JSON!) {
-       change_multiple_column_values(item_id: $itemId, board_id: $boardId, column_values: $vals) { id }
-     }`,
-    {
-      itemId,
-      boardId: DRAWER_CLOSE.boardId,
-      vals: JSON.stringify(columnValues),
-    }
-  );
+  try {
+    await mondayQuery(
+      `mutation ($itemId: ID!, $boardId: ID!, $vals: JSON!) {
+         change_multiple_column_values(item_id: $itemId, board_id: $boardId, column_values: $vals) { id }
+       }`,
+      {
+        itemId,
+        boardId: DRAWER_CLOSE.boardId,
+        vals: JSON.stringify(columnValues),
+      }
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to save deposit. Please try again." };
+  }
 
   const bankPhoto = fd.get("bankReceiptPhoto") as File | null;
   if (bankPhoto && bankPhoto.size > 0) {
-    await mondayUploadFile(itemId, DRAWER_CLOSE.columns.bankReceiptPhoto.id, bankPhoto);
+    try { await mondayUploadFile(itemId, DRAWER_CLOSE.columns.bankReceiptPhoto.id, bankPhoto); } catch { /* non-fatal */ }
   }
 
   revalidatePath("/drawer-close");
-  redirect("/drawer-close");
 }
