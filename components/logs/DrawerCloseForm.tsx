@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createDrawerCloseEntry } from "@/app/drawer-close/actions";
 import { DRAWER_CLOSE } from "@/lib/monday-schema";
 import { SelectField, TextareaField } from "./FormField";
@@ -42,6 +43,8 @@ export function DrawerCloseForm({
   patioHandoff,
   mainHandoffs,
 }: DrawerCloseFormProps) {
+  const router = useRouter();
+  const [formError, setFormError] = useState<string | null>(null);
   const [drawer, setDrawer] = useState<"Main Bar" | "Patio Bar">("Main Bar");
   const [openingCash, setOpeningCash] = useState("500");
   const [posSales, setPosSales] = useState("");
@@ -101,8 +104,28 @@ export function DrawerCloseForm({
 
   const patioBlocked = drawer === "Patio Bar" && !patioHandoff;
 
+  async function handleSubmit(fd: FormData) {
+    setFormError(null);
+    try {
+      const result = await createDrawerCloseEntry(fd);
+      if (result?.error) {
+        setFormError(result.error);
+        return;
+      }
+      router.push("/drawer-close");
+      router.refresh();
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+    }
+  }
+
   return (
-    <form action={createDrawerCloseEntry} className="space-y-5">
+    <form action={handleSubmit} className="space-y-5">
+      {formError && (
+        <div className="rounded-xl border border-red-700/40 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+          {formError}
+        </div>
+      )}
       {/* Date */}
       <div>
         <label htmlFor="shiftDate" className="mb-1.5 block text-sm font-medium text-brand-cream-300">

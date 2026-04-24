@@ -79,7 +79,9 @@ export async function findActiveMainHandoffs(
 }
 
 /** Main bartender logs a cash handoff to the Patio bartender. */
-export async function logPatioHandoff(fd: FormData) {
+export async function logPatioHandoff(
+  fd: FormData
+): Promise<{ error: string } | undefined> {
   const user = await requireRole(["HOSPITALITY", "ADMIN"]);
 
   const amount = parseNum(fd.get("amount"));
@@ -87,30 +89,30 @@ export async function logPatioHandoff(fd: FormData) {
   const shiftDate = fd.get("shiftDate") as string;
 
   if (!amount || amount <= 0) {
-    throw new Error("Transfer amount must be greater than $0");
+    return { error: "Transfer amount must be greater than $0" };
   }
   if (!patioBartenderId) {
-    throw new Error("Patio bartender is required");
+    return { error: "Patio bartender is required" };
   }
 
-  // Check for any unclosed prior handoff from this Main bartender today
-  const today = todayDate();
+  // Check for any unclosed prior handoff from this Main bartender on this date
+  const dateObj = shiftDate ? new Date(shiftDate + "T00:00:00Z") : todayDate();
   const prior = await prisma.patioHandoff.findFirst({
     where: {
       mainBartenderId: user.id,
-      shiftDate: shiftDate ? new Date(shiftDate + "T00:00:00Z") : today,
+      shiftDate: utcDayRange(dateObj),
       consumedByMainClose: false,
     },
   });
   if (prior) {
-    throw new Error(
-      `There's already an unclosed Patio handoff of $${prior.amountTransferred.toFixed(2)} from today. Close that one first.`
-    );
+    return {
+      error: `There's already an unclosed Patio handoff of $${prior.amountTransferred.toFixed(2)} for this date. Close that one first.`,
+    };
   }
 
   await prisma.patioHandoff.create({
     data: {
-      shiftDate: shiftDate ? new Date(shiftDate + "T00:00:00Z") : today,
+      shiftDate: dateObj,
       amountTransferred: amount,
       mainBartenderId: user.id,
       patioBartenderId,
@@ -122,7 +124,9 @@ export async function logPatioHandoff(fd: FormData) {
 
 // ─── Close submission ─────────────────────────────────────────────────────────
 
-export async function createDrawerCloseEntry(fd: FormData) {
+export async function createDrawerCloseEntry(
+  fd: FormData
+): Promise<{ error: string } | undefined> {
   const user = await requireRole(["HOSPITALITY", "ADMIN"]);
 
   const date = (fd.get("shiftDate") as string) ?? "";
@@ -171,9 +175,10 @@ export async function createDrawerCloseEntry(fd: FormData) {
     // Patio Bar — require a logged handoff
     const handoff = await findOpenPatioHandoff(user.id, shiftDateObj);
     if (!handoff) {
-      throw new Error(
-        "No handoff logged for today. Ask the Main bartender to log the handoff before you close."
-      );
+      return {
+        error:
+          "No handoff logged for today. Ask the Main bartender to log the handoff before you close.",
+      };
     }
     opening = handoff.amountTransferred;
     const bankReturnedToMain = parseNum(fd.get("bankReturnedToMain"));

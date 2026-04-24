@@ -16,11 +16,15 @@ export function PatioHandoffForm({ defaultDate, otherUsers }: PatioHandoffFormPr
 
   async function handleSubmit(fd: FormData) {
     try {
-      await logPatioHandoff(fd);
+      const result = await logPatioHandoff(fd);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
       router.push("/drawer-close");
       router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } catch {
+      setError("Something went wrong. Please try again.");
     }
   }
 
