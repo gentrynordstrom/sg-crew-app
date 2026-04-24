@@ -140,6 +140,7 @@ export const DRAWER_CLOSE = {
     },
     openingAmount: { id: "numeric_mm2qwrqd", type: "numbers" as const },
     posSales: { id: "numeric_mm2qseap", type: "numbers" as const },
+    creditCardSales: { id: "numeric_mm2q6281", type: "numbers" as const },
     cashSales: { id: "numeric_mm2qx0wn", type: "numbers" as const },
     tipsCreditCard: { id: "numeric_mm2qpqa3", type: "numbers" as const },
     payouts: { id: "numeric_mm2qqazz", type: "numbers" as const },

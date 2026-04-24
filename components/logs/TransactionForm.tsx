@@ -99,7 +99,6 @@ export function TransactionForm({ defaultDate, defaultPerson }: TransactionFormP
         label="Receipts"
         multiple
         accept="image/*,application/pdf"
-        capture="environment"
       />
 
       <SubmitButton label="Save Transaction" />

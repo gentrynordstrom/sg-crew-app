@@ -130,7 +130,6 @@ export function DrawerDepositForm({
         name="bankReceiptPhoto"
         label="Bank Receipt Photo"
         accept="image/*"
-        capture="environment"
       />
 
       <TextareaField name="depositNotes" label="Notes" rows={2} />

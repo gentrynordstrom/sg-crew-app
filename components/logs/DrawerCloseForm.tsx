@@ -48,6 +48,7 @@ export function DrawerCloseForm({
   const [drawer, setDrawer] = useState<"Main Bar" | "Patio Bar">("Main Bar");
   const [openingCash, setOpeningCash] = useState("500");
   const [posSales, setPosSales] = useState("");
+  const [creditCardSales, setCreditCardSales] = useState("");
   const [cashSales, setCashSales] = useState("");
   const [cardTips, setCardTips] = useState("");
   const [payouts, setPayouts] = useState("");
@@ -58,6 +59,8 @@ export function DrawerCloseForm({
   );
 
   const cashSalesAmt = parseAmt(cashSales);
+  const creditCardSalesAmt = parseAmt(creditCardSales);
+  const totalSales = creditCardSalesAmt + cashSalesAmt;
   const payoutsAmt = parseAmt(payouts);
   const closingCountAmt = parseAmt(closingCount);
 
@@ -226,11 +229,22 @@ export function DrawerCloseForm({
       <MoneyField name="posSales" label="POS Sales" value={posSales} onChange={setPosSales} required />
 
       <div className="grid grid-cols-2 gap-4">
+        <MoneyField name="creditCardSales" label="Credit Card Sales" value={creditCardSales} onChange={setCreditCardSales} required />
         <MoneyField name="cashSales" label="Cash Sales" value={cashSales} onChange={setCashSales} required />
-        <MoneyField name="tipsCreditCard" label="Card Tips" value={cardTips} onChange={setCardTips} />
       </div>
 
-      <MoneyField name="payouts" label="Payouts" value={payouts} onChange={setPayouts} />
+      {/* Total Sales = CC + Cash */}
+      {(creditCardSales || cashSales) && (
+        <div className="flex justify-between rounded-xl bg-brand-moss-800/40 px-4 py-2.5 text-sm ring-1 ring-brand-cream-900/20">
+          <span className="text-brand-cream-400">Total Sales</span>
+          <span className="font-semibold text-brand-cream-200">${totalSales.toFixed(2)}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <MoneyField name="tipsCreditCard" label="Card Tips" value={cardTips} onChange={setCardTips} />
+        <MoneyField name="payouts" label="Other Payouts" value={payouts} onChange={setPayouts} />
+      </div>
 
       {/* Patio: return amount to Main */}
       {drawer === "Patio Bar" && patioHandoff && (
@@ -306,7 +320,6 @@ export function DrawerCloseForm({
         name="posPhoto"
         label="POS Photo"
         accept="image/*"
-        capture="environment"
       />
 
       <SubmitButton label="Submit Drawer Close" pendingLabel="Submitting…" />

@@ -69,14 +69,12 @@ export function MaintenanceForm({ defaultDate, crewName }: MaintenanceFormProps)
         name="beforePhotos"
         label="Before Pictures"
         multiple
-        capture="environment"
       />
 
       <AttachmentPicker
         name="afterPhotos"
         label="After Pictures"
         multiple
-        capture="environment"
       />
 
       <SubmitButton label="Save Maintenance Entry" />

@@ -133,6 +133,7 @@ export async function createDrawerCloseEntry(
   const bartender = (fd.get("bartender") as string) ?? "";
   const shiftType = (fd.get("shiftType") as string) ?? "";
   const posSales = parseNum(fd.get("posSales"));
+  const creditCardSales = parseNum(fd.get("creditCardSales"));
   const cashSales = parseNum(fd.get("cashSales"));
   const tipsCreditCard = parseNum(fd.get("tipsCreditCard"));
   const payouts = parseNum(fd.get("payouts"));
@@ -228,6 +229,7 @@ export async function createDrawerCloseEntry(
     [DRAWER_CLOSE.columns.drawer.id]: drawerType ? statusValue(drawerType) : undefined,
     [DRAWER_CLOSE.columns.openingAmount.id]: numberValue(opening),
     [DRAWER_CLOSE.columns.posSales.id]: numberValue(posSales),
+    [DRAWER_CLOSE.columns.creditCardSales.id]: numberValue(creditCardSales),
     [DRAWER_CLOSE.columns.cashSales.id]: numberValue(cashSales),
     [DRAWER_CLOSE.columns.tipsCreditCard.id]: numberValue(tipsCreditCard),
     [DRAWER_CLOSE.columns.payouts.id]: numberValue(payouts),

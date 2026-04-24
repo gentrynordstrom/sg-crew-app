@@ -73,7 +73,6 @@ export function CleaningForm({ defaultDate, crewName }: CleaningFormProps) {
         name="photos"
         label="After Pictures"
         multiple
-        capture="environment"
       />
 
       <SubmitButton label="Save Cleaning Entry" />
