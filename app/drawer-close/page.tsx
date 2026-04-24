@@ -4,6 +4,7 @@ import { mondayQuery } from "@/lib/monday";
 import { DRAWER_CLOSE } from "@/lib/monday-schema";
 import { LogPageHeader } from "@/components/logs/LogPageHeader";
 import { StatusChip } from "@/components/logs/StatusChip";
+import { ChevronRightIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -183,38 +184,43 @@ export default async function DrawerClosePage() {
                 const closing = col(item, DRAWER_CLOSE.columns.closingCount.id);
                 const group = item.group?.title ?? "";
                 return (
-                  <li
-                    key={item.id}
-                    className="rounded-2xl bg-brand-moss-600/50 px-5 py-4 ring-1 ring-brand-cream-900/20"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-semibold text-brand-cream-100">{item.name}</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {status && <StatusChip label={status} variant={varianceVariant(status)} />}
-                        {isAdmin && group && group !== "This Week" && group !== "Needs Review" && (
-                          <StatusChip label={group} variant="muted" />
-                        )}
+                  <li key={item.id}>
+                    <Link
+                      href={`/drawer-close/${item.id}`}
+                      className="flex items-center gap-3 rounded-2xl bg-brand-moss-600/50 px-5 py-4 ring-1 ring-brand-cream-900/20 transition hover:ring-brand-brass-400/40 active:scale-[0.99]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-semibold text-brand-cream-100">{item.name}</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {status && <StatusChip label={status} variant={varianceVariant(status)} />}
+                            {isAdmin && group && group !== "This Week" && group !== "Needs Review" && (
+                              <StatusChip label={group} variant="muted" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-cream-400">
+                          {date && <span>{date}</span>}
+                          {bartender && <span>{bartender}</span>}
+                          {drawer && <span>{drawer}</span>}
+                          {closing && <span>Counted: ${parseFloat(closing).toFixed(2)}</span>}
+                          {variance && status !== "Balanced" && status !== "Deposited" && (
+                            <span
+                              className={
+                                status === "Short"
+                                  ? "text-red-400"
+                                  : status === "Over"
+                                  ? "text-amber-300"
+                                  : ""
+                              }
+                            >
+                              Var: ${parseFloat(variance).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-cream-400">
-                      {date && <span>{date}</span>}
-                      {bartender && <span>{bartender}</span>}
-                      {drawer && <span>{drawer}</span>}
-                      {closing && <span>Counted: ${parseFloat(closing).toFixed(2)}</span>}
-                      {variance && status !== "Balanced" && status !== "Deposited" && (
-                        <span
-                          className={
-                            status === "Short"
-                              ? "text-red-400"
-                              : status === "Over"
-                              ? "text-amber-300"
-                              : ""
-                          }
-                        >
-                          Var: ${parseFloat(variance).toFixed(2)}
-                        </span>
-                      )}
-                    </div>
+                      <ChevronRightIcon />
+                    </Link>
                   </li>
                 );
               })}

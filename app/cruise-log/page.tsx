@@ -4,6 +4,7 @@ import { mondayQuery } from "@/lib/monday";
 import { CRUISE } from "@/lib/monday-schema";
 import { LogPageHeader } from "@/components/logs/LogPageHeader";
 import { StatusChip } from "@/components/logs/StatusChip";
+import { ChevronRightIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -107,22 +108,27 @@ export default async function CruiseLogPage() {
               const guests = col(item, CRUISE.columns.guests.id);
               const departure = col(item, CRUISE.columns.departureTime.id);
               return (
-                <li
-                  key={item.id}
-                  className="rounded-2xl bg-brand-moss-600/50 px-5 py-4 ring-1 ring-brand-cream-900/20"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-semibold text-brand-cream-100">{item.name}</span>
-                    {outcome && (
-                      <StatusChip label={outcome} variant={outcomeVariant(outcome)} />
-                    )}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-cream-400">
-                    {cruiseType && <span>{cruiseType}</span>}
-                    {captain && <span>Capt. {captain}</span>}
-                    {guests && <span>{guests} guests</span>}
-                    {departure && <span>Dep. {departure}</span>}
-                  </div>
+                <li key={item.id}>
+                  <Link
+                    href={`/cruise-log/${item.id}`}
+                    className="flex items-center gap-3 rounded-2xl bg-brand-moss-600/50 px-5 py-4 ring-1 ring-brand-cream-900/20 transition hover:ring-brand-brass-400/40 active:scale-[0.99]"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-brand-cream-100">{item.name}</span>
+                        {outcome && (
+                          <StatusChip label={outcome} variant={outcomeVariant(outcome)} />
+                        )}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-cream-400">
+                        {cruiseType && <span>{cruiseType}</span>}
+                        {captain && <span>Capt. {captain}</span>}
+                        {guests && <span>{guests} guests</span>}
+                        {departure && <span>Dep. {departure}</span>}
+                      </div>
+                    </div>
+                    <ChevronRightIcon />
+                  </Link>
                 </li>
               );
             })}

@@ -4,6 +4,7 @@ import { mondayQuery } from "@/lib/monday";
 import { TRANSACTIONS } from "@/lib/monday-schema";
 import { LogPageHeader } from "@/components/logs/LogPageHeader";
 import { StatusChip } from "@/components/logs/StatusChip";
+import { ChevronRightIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -95,25 +96,30 @@ export default async function TransactionsPage() {
               const category = col(item, TRANSACTIONS.columns.category.id);
               const person = col(item, TRANSACTIONS.columns.person.id);
               return (
-                <li
-                  key={item.id}
-                  className="rounded-2xl bg-brand-moss-600/50 px-5 py-4 ring-1 ring-brand-cream-900/20"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-semibold text-brand-cream-100">{item.name}</span>
-                    {txType && (
-                      <StatusChip
-                        label={txType}
-                        variant={txType === "Income" ? "success" : "warning"}
-                      />
-                    )}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-cream-400">
-                    {date && <span>{date}</span>}
-                    {category && <span>{category}</span>}
-                    {currency && <span>{currency}</span>}
-                    {person && <span>{person}</span>}
-                  </div>
+                <li key={item.id}>
+                  <Link
+                    href={`/transactions/${item.id}`}
+                    className="flex items-center gap-3 rounded-2xl bg-brand-moss-600/50 px-5 py-4 ring-1 ring-brand-cream-900/20 transition hover:ring-brand-brass-400/40 active:scale-[0.99]"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-semibold text-brand-cream-100">{item.name}</span>
+                        {txType && (
+                          <StatusChip
+                            label={txType}
+                            variant={txType === "Income" ? "success" : "warning"}
+                          />
+                        )}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-cream-400">
+                        {date && <span>{date}</span>}
+                        {category && <span>{category}</span>}
+                        {currency && <span>{currency}</span>}
+                        {person && <span>{person}</span>}
+                      </div>
+                    </div>
+                    <ChevronRightIcon />
+                  </Link>
                 </li>
               );
             })}
