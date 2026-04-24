@@ -49,9 +49,10 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
 
   const pin = derivePinFromPhone(phone);
   const pinHash = await bcrypt.hash(pin, 10);
+  const paychexId = ((formData.get("paychexId") ?? "") as string).trim() || null;
 
   await prisma.user.create({
-    data: { name, phone, role, pinHash, isActive: true },
+    data: { name, phone, role, pinHash, isActive: true, paychexId },
   });
 
   revalidatePath("/admin/users");
@@ -91,14 +92,16 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
   }
 
   const phoneChanged = existing.phone !== phone;
+  const paychexId = ((formData.get("paychexId") ?? "") as string).trim() || null;
   const data: {
     name: string;
     phone: string;
     role: Role;
+    paychexId: string | null;
     pinHash?: string;
     failedAttempts?: number;
     lockedUntil?: null;
-  } = { name, phone, role };
+  } = { name, phone, role, paychexId };
 
   if (phoneChanged) {
     const newPin = derivePinFromPhone(phone);

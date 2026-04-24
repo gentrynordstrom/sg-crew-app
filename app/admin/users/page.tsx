@@ -21,6 +21,7 @@ export default async function AdminUsersPage() {
       role: true,
       isActive: true,
       lockedUntil: true,
+      paychexId: true,
     },
   });
 

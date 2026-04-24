@@ -32,9 +32,11 @@ export type Feature =
   | "transactions"
   | "drawer-close"
   | "time-tracking"
+  | "schedule"
   | "sops"
   | "chatbot"
-  | "admin";
+  | "admin"
+  | "admin-schedule";
 
 interface TileDef {
   feature: Feature;
@@ -81,6 +83,18 @@ const ALL_TILES: TileDef[] = [
     href: "/time",
   },
   {
+    feature: "schedule",
+    label: "My Schedule",
+    description: "View your upcoming shifts.",
+    href: "/schedule",
+  },
+  {
+    feature: "admin-schedule",
+    label: "Scheduling",
+    description: "Build and publish the crew schedule.",
+    href: "/admin/schedule",
+  },
+  {
     feature: "sops",
     label: "SOPs",
     description: "Standard operating procedures.",
@@ -107,6 +121,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "maintenance-log",
     "transactions",
     "time-tracking",
+    "schedule",
     "sops",
     "chatbot",
   ],
@@ -115,6 +130,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "maintenance-log",
     "transactions",
     "time-tracking",
+    "schedule",
     "sops",
     "chatbot",
   ],
@@ -122,6 +138,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "maintenance-log",
     "transactions",
     "time-tracking",
+    "schedule",
     "sops",
     "chatbot",
   ],
@@ -130,6 +147,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "drawer-close",
     "transactions",
     "time-tracking",
+    "schedule",
     "sops",
     "chatbot",
   ],
@@ -140,6 +158,8 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "transactions",
     "drawer-close",
     "time-tracking",
+    "schedule",
+    "admin-schedule",
     "sops",
     "chatbot",
     "admin",

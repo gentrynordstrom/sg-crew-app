@@ -106,6 +106,9 @@ export function TimesheetTable({ rows, from, to }: Props) {
   const exportHref = `/admin/timesheets/export?from=${encodeURIComponent(
     from
   )}&to=${encodeURIComponent(to)}`;
+  const paychexExportHref = `/admin/timesheets/export-paychex?from=${encodeURIComponent(
+    from
+  )}&to=${encodeURIComponent(to)}`;
 
   return (
     <div>
@@ -198,9 +201,15 @@ export function TimesheetTable({ rows, from, to }: Props) {
           </button>
           <a
             href={exportHref}
-            className="inline-flex items-center rounded-full bg-brand-brass-400 px-4 py-2 text-sm font-semibold text-brand-moss-800 shadow-sm transition hover:bg-brand-brass-300"
+            className="inline-flex items-center rounded-full border border-brand-brass-400/60 bg-brand-brass-700/30 px-4 py-2 text-sm font-semibold text-brand-brass-100 shadow-sm transition hover:bg-brand-brass-700/50"
           >
             Export CSV
+          </a>
+          <a
+            href={paychexExportHref}
+            className="inline-flex items-center rounded-full bg-brand-brass-400 px-4 py-2 text-sm font-semibold text-brand-moss-800 shadow-sm transition hover:bg-brand-brass-300"
+          >
+            Export for Paychex
           </a>
         </div>
       </form>

@@ -292,3 +292,99 @@ function csvEscape(v: string | number): string {
   }
   return s;
 }
+
+export interface PaychexCsvRowEntry extends TimeEntry {
+  user: Pick<User, "name" | "phone" | "role"> & { paychexId?: string | null };
+}
+
+/**
+ * Paychex Flex-compatible CSV for manual import.
+ * Format: Employee ID, Last Name, First Name, Work Date, Pay Code, Hours
+ *
+ * Splits each week individually to detect overtime (> 40 hrs/week).
+ * Pay Code: REG = regular, OT = overtime hours beyond 40 in the work week.
+ */
+export function buildPaychexCsv(rows: PaychexCsvRowEntry[]): string {
+  const header = [
+    "Employee ID",
+    "Last Name",
+    "First Name",
+    "Work Date",
+    "Pay Code",
+    "Hours",
+  ];
+  const lines = [header.map(csvEscape).join(",")];
+
+  // Group finished shifts by employee to compute weekly OT
+  // Week key: userId + ISO week (Mon-based)
+  const weeklyMinutes = new Map<string, number>();
+
+  // Sort ascending so weekly running totals accumulate in time order
+  const sorted = [...rows].sort(
+    (a, b) => a.clockInAt.getTime() - b.clockInAt.getTime()
+  );
+
+  for (const r of sorted) {
+    if (!r.clockOutAt) continue; // skip open shifts
+
+    const mins = paidMinutes(r);
+    if (mins === 0) continue;
+
+    const nameparts = r.user.name.trim().split(/\s+/);
+    const firstName = nameparts.slice(0, -1).join(" ") || nameparts[0];
+    const lastName = nameparts.length > 1 ? nameparts[nameparts.length - 1] : "";
+    const employeeId = r.user.paychexId?.trim() || r.userId;
+    const workDate = ymdInPayrollTz(r.clockInAt);
+
+    // ISO week key for OT tracking
+    const weekKey = `${r.userId}:${isoWeekKey(r.clockInAt)}`;
+    const prevMins = weeklyMinutes.get(weekKey) ?? 0;
+    const newTotal = prevMins + mins;
+    weeklyMinutes.set(weekKey, newTotal);
+
+    const WEEKLY_OT_MINS = 40 * 60;
+    let regMins: number;
+    let otMins: number;
+
+    if (prevMins >= WEEKLY_OT_MINS) {
+      // Already in OT territory — all these minutes are OT
+      regMins = 0;
+      otMins = mins;
+    } else if (newTotal > WEEKLY_OT_MINS) {
+      // This shift straddles the 40-hour threshold
+      regMins = WEEKLY_OT_MINS - prevMins;
+      otMins = mins - regMins;
+    } else {
+      regMins = mins;
+      otMins = 0;
+    }
+
+    if (regMins > 0) {
+      lines.push(
+        [employeeId, lastName, firstName, workDate, "REG",
+          minutesToHoursDecimal(regMins).toFixed(2)]
+          .map(csvEscape).join(",")
+      );
+    }
+    if (otMins > 0) {
+      lines.push(
+        [employeeId, lastName, firstName, workDate, "OT",
+          minutesToHoursDecimal(otMins).toFixed(2)]
+          .map(csvEscape).join(",")
+      );
+    }
+  }
+
+  return lines.join("\r\n") + "\r\n";
+}
+
+/** Returns a string identifying the Mon-Sun ISO week containing `d`. */
+function isoWeekKey(d: Date): string {
+  const ymd = ymdInPayrollTz(d);
+  const [y, m, day] = ymd.split("-").map(Number);
+  const asDate = new Date(Date.UTC(y, m - 1, day));
+  const dow = asDate.getUTCDay();
+  const diff = dow === 0 ? -6 : 1 - dow;
+  const mon = new Date(asDate.getTime() + diff * 86400000);
+  return mon.toISOString().slice(0, 10);
+}

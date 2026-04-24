@@ -21,6 +21,21 @@ enum TimeEntryStatus {
   LOCKED
 }
 
+enum ScheduledEventType {
+  CRUISE
+  CLEANING
+  MAINTENANCE
+  UPKEEP
+  HOSPITALITY
+  OTHER
+}
+
+enum ScheduledEventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
 model User {
   id              String    @id @default(cuid())
   name            String
@@ -34,10 +49,14 @@ model User {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
+  paychexId              String?        @map("paychex_id")
+
   timeEntries            TimeEntry[]    @relation("TimeEntryUser")
   lockedEntries          TimeEntry[]    @relation("TimeEntryLockedBy")
   mainHandoffs           PatioHandoff[] @relation("MainHandoffs")
   patioHandoffs          PatioHandoff[] @relation("PatioHandoffs")
+  createdEvents          ScheduledEvent[] @relation("EventCreator")
+  scheduledShifts        ScheduledShift[]
 
   @@index([isActive])
   @@map("users")
@@ -92,4 +111,44 @@ model TimeEntry {
   @@index([status])
   @@index([clockInAt])
   @@map("time_entries")
+}
+
+// An event on the schedule (cruise, cleaning, upkeep, etc.).
+// One event can have many crew members assigned via ScheduledShift.
+model ScheduledEvent {
+  id          String               @id @default(cuid())
+  title       String
+  date        DateTime             @db.Date
+  startTime   DateTime             @map("start_time")
+  endTime     DateTime             @map("end_time")
+  eventType   ScheduledEventType   @map("event_type")
+  status      ScheduledEventStatus @default(DRAFT)
+  // Starboard Suite integration (future): store the ticketing event ID here
+  sourceId    String?              @map("source_id")
+  sourceType  String?              @map("source_type")
+  notes       String?
+  createdById String               @map("created_by_id")
+  createdBy   User                 @relation("EventCreator", fields: [createdById], references: [id])
+  shifts      ScheduledShift[]
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@index([date])
+  @@index([status])
+  @@map("scheduled_events")
+}
+
+// Assigns one crew member to one ScheduledEvent.
+model ScheduledShift {
+  id        String         @id @default(cuid())
+  eventId   String         @map("event_id")
+  event     ScheduledEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String         @map("user_id")
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      String?
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@map("scheduled_shifts")
 }

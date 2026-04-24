@@ -10,7 +10,7 @@ import {
 
 interface UserFormProps {
   mode: "create" | "edit";
-  user?: Pick<User, "id" | "name" | "phone" | "role">;
+  user?: Pick<User, "id" | "name" | "phone" | "role" | "paychexId">;
   onDone?: () => void;
 }
 
@@ -117,6 +117,24 @@ export function UserForm({ mode, user, onDone }: UserFormProps) {
             </option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <label htmlFor="paychexId" className={LABEL_CLASS}>
+          Paychex Employee ID{" "}
+          <span className="text-brand-cream-500 font-normal">(optional)</span>
+        </label>
+        <input
+          id="paychexId"
+          name="paychexId"
+          type="text"
+          defaultValue={user?.paychexId ?? ""}
+          placeholder="e.g. 12345"
+          className={INPUT_CLASS}
+        />
+        <p className="mt-1 text-xs text-brand-cream-500">
+          Used in the Paychex Flex CSV export. Leave blank to use the system ID.
+        </p>
       </div>
 
       {error && (

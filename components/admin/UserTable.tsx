@@ -14,7 +14,7 @@ import {
 interface UserRow
   extends Pick<
     User,
-    "id" | "name" | "phone" | "role" | "isActive" | "lockedUntil"
+    "id" | "name" | "phone" | "role" | "isActive" | "lockedUntil" | "paychexId"
   > {}
 
 export function UserTable({
