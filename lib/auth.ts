@@ -37,3 +37,13 @@ export async function requireAdmin(): Promise<User> {
   if (user.role !== "ADMIN") redirect("/");
   return user;
 }
+
+/**
+ * Require the current user to have one of the specified roles.
+ * Redirects to "/" if the role is not permitted.
+ */
+export async function requireRole(roles: import("@prisma/client").Role[]): Promise<User> {
+  const user = await requireActiveSession();
+  if (!roles.includes(user.role)) redirect("/");
+  return user;
+}

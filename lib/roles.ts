@@ -30,6 +30,7 @@ export type Feature =
   | "cleaning-log"
   | "maintenance-log"
   | "transactions"
+  | "drawer-close"
   | "time-tracking"
   | "sops"
   | "chatbot"
@@ -47,25 +48,31 @@ const ALL_TILES: TileDef[] = [
     feature: "cruise-log",
     label: "Cruise Log",
     description: "Captain's log entries for each cruise.",
-    href: "/coming-soon",
+    href: "/cruise-log",
   },
   {
     feature: "cleaning-log",
     label: "Cleaning Log",
     description: "Track boat cleanings and turnovers.",
-    href: "/coming-soon",
+    href: "/cleaning-log",
   },
   {
     feature: "maintenance-log",
     label: "Maintenance Log",
     description: "Mechanical work, repairs, and service.",
-    href: "/coming-soon",
+    href: "/maintenance-log",
   },
   {
     feature: "transactions",
     label: "Transactions",
     description: "Receipts and expense tracking.",
-    href: "/coming-soon",
+    href: "/transactions",
+  },
+  {
+    feature: "drawer-close",
+    label: "Drawer Close",
+    description: "Close out the POS drawer at end of shift.",
+    href: "/drawer-close",
   },
   {
     feature: "time-tracking",
@@ -119,6 +126,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "chatbot",
   ],
   HOSPITALITY: [
+    "drawer-close",
     "transactions",
     "time-tracking",
     "sops",
@@ -129,6 +137,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "cleaning-log",
     "maintenance-log",
     "transactions",
+    "drawer-close",
     "time-tracking",
     "sops",
     "chatbot",

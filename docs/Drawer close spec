@@ -1,0 +1,308 @@
+# Drawer Close — Monday Board Spec (FINAL)
+
+**Who builds this:** you, manually in Monday.com
+**Who reads/writes to it:** the SG Crew App, via Monday GraphQL API (Phase 2+)
+**Build time:** ~25 min (existing board already built — this is the delta)
+
+---
+
+## 1. Lifecycle overview
+
+Every shift has a three-phase lifecycle on the same board row:
+
+**Phase 1 — Close (night, by bartender via app)**
+Bartender enters reconciliation data and photos. App computes Variance and writes the row with `Needs Review` or `Balanced` status.
+
+**Phase 2 — Review (optional, by admin)**
+If variance ≠ $0, admin reviews and manually sets status to `Approved`. Balanced shifts auto-approve (see automation 5).
+
+**Phase 3 — Deposit (next morning, by admin via app)**
+Admin counts handoff cash, takes the deposit to the bank, fills in deposit fields on the same row. Status becomes `Deposited`.
+
+```
+        ┌─── Balanced ───────────────────────┐
+Close ──┤                                     ├── Approved ── Deposited
+        └─── Needs Review ── Short / Over ───┘
+```
+
+---
+
+## 2. Two drawer modes
+
+**Main Bar — fixed float**
+- Standard $500 opening float, stays in drawer across shifts
+- `To Deposit $ = Closing Count − 500`
+- If Closing Count < 500 → app blocks submission, prompts recount
+
+**Patio Bar — variable bank, borrowed from Main**
+- Opens with cash taken from Main Bar's $500 float
+- Amount (e.g. $200) is logged by **Main bartender** before Patio opens
+- At Patio close, bartender returns the bank to Main + deposits the rest
+- `To Deposit $ = Closing Count − Bank Returned to Main`
+- Main's close later reflects any shortage in the returned bank
+
+**Implication for Main's close on Patio nights:**
+- Main's Expected Cash formula gets two extra terms: `− Cash Transferred to Patio + Cash Returned from Patio`
+- If Patio returns the full amount → Main reconciles normally
+- If Patio returns less → Main shows short by the gap
+
+---
+
+## 3. The handoff log (Main → Patio)
+
+Third entity in the system. Lives in the app's Postgres DB (not Monday — no board needed for this), then populates fields on both the Main and Patio close rows when they're submitted.
+
+**Schema (Phase 2 Prisma model):**
+
+```prisma
+model PatioHandoff {
+  id               String    @id @default(cuid())
+  shiftDate        DateTime  @map("shift_date")
+  amountTransferred Float    @map("amount_transferred")
+  patioBartenderId String    @map("patio_bartender_id")
+  mainBartenderId  String    @map("main_bartender_id")
+  amountReturned   Float?    @map("amount_returned")   // filled by Patio bartender at close
+  consumedByMainClose Boolean @default(false) @map("consumed_by_main_close")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  mainBartender    User      @relation("MainHandoffs", fields: [mainBartenderId], references: [id])
+  patioBartender   User      @relation("PatioHandoffs", fields: [patioBartenderId], references: [id])
+  @@map("patio_handoffs")
+}
+```
+
+**UX flow:**
+1. **Before Patio opens** — Main bartender taps "Log Patio Handoff" from their home screen. Modal: "How much to Patio?" → amount. "Which bartender?" → dropdown of users with BARTENDER role. Submit. A `PatioHandoff` row is created in the DB, `consumedByMainClose = false`.
+2. **Patio close** — Patio bartender's close form looks up the most recent unconsumed handoff matching their user ID + today's date. If none exists, app blocks close with "No handoff logged — ask Main bartender to log the handoff before closing." If found, the amount appears read-only as `Opening Bank from Main: $200`. Patio enters `Bank Returned to Main`. On submit, the app updates the handoff row with `amountReturned`, writes the Patio close row to Monday with the handoff data in the appropriate columns.
+3. **Main close** — Main bartender's close form auto-detects any handoffs from today that haven't been consumed yet. Shows them: "You transferred $200 to Jane, she returned $195." Both values prefill the relevant close fields. On submit, handoff gets marked `consumedByMainClose = true`. Main's Variance calculation includes the loan adjustment.
+
+**Edge cases handled:**
+- Patio opens but never submits a close (app has a "Patio close never submitted" alert after 24hr)
+- Main opens but never submits a close (same alert)
+- Main tries to log a second handoff before the first is reconciled (app warns: "There's an unclosed Patio handoff from earlier — confirm you want to log another?")
+
+---
+
+## 4. Board basics
+
+| Field | Value |
+|---|---|
+| Board name | **SG Drawer Close Log** |
+| Board ID | `18410139206` (already created) |
+| Board description | End-of-shift drawer reconciliation + next-day deposit tracking. Includes Main/Patio bank transfers. |
+| Privacy | Main |
+| Workspace | Sainte Genevieve |
+
+---
+
+## 5. Groups
+
+1. **Needs Review** — variance > $0, waiting for admin
+2. **Ready to Deposit** — approved or auto-balanced, awaiting deposit
+3. **Deposited** — fully closed out
+4. **This Week** — balanced shifts
+5. **Archive** — 90+ days old
+
+---
+
+## 6. Columns (complete list)
+
+### Item Name
+- Rename to: **Shift**
+- Format: `YYYY-MM-DD · [Bartender] · [Drawer]`
+
+### — IDENTITY —
+
+**1. Bartender** · Type: **People** · Single person · Required
+**2. Shift Date** · Type: **Date** · Date only
+**3. Drawer** · Type: **Status** · Labels: `Main Bar` (dark blue), `Patio Bar` (teal) · Default: Main Bar
+**4. Shift Type** · Type: **Status** · Labels: `Lunch` (yellow), `Dinner` (orange), `Cruise` (purple), `Private Event` (pink), `Other` (gray)
+
+### — CLOSE PHASE (filled by bartender via app) —
+
+**5. Opening $** · Type: **Numbers** · Unit: `$` · 2 decimals
+- Main: always $500 (app validates)
+- Patio: the bank borrowed from Main, from handoff log
+
+**6. POS Sales** · Type: **Numbers** · Unit: `$`
+**7. Cash Sales** · Type: **Numbers** · Unit: `$`
+**8. Cash Tips** · Type: **Numbers** · Unit: `$`
+**9. Card Tips** · Type: **Numbers** · Unit: `$`
+**10. Payouts** · Type: **Numbers** · Unit: `$`
+
+**11. Bank Transferred to Patio** · Type: **Numbers** · Unit: `$`
+- Only set on Main Bar close rows (from handoff log)
+- $0 if no Patio was open that night
+
+**12. Bank Returned from Patio** · Type: **Numbers** · Unit: `$`
+- Only set on Main Bar close rows (from handoff log)
+- $0 if no Patio was open
+
+**13. Expected $** · Type: **Numbers** · Unit: `$`
+- Computed by app:
+  - Main: `Opening $ + Cash Sales + Cash Tips − Payouts − Bank Transferred to Patio + Bank Returned from Patio`
+  - Patio: `Opening $ + Cash Sales + Cash Tips − Payouts − Bank Returned to Main`
+  - Wait — for Patio this needs a "Bank Returned to Main" column too. Adding below.
+
+**14. Bank Returned to Main** · Type: **Numbers** · Unit: `$`
+- Only set on Patio Bar close rows (from handoff log)
+- On Main rows: leave blank
+
+**15. Closing Count** · Type: **Numbers** · Unit: `$`
+**16. Variance** · Type: **Numbers** · Unit: `$` · Allow negatives · Computed by app: `Closing Count − Expected $`
+
+**17. Count Photo** · Type: **File**
+**18. POS Photo** · Type: **File**
+**19. Bartender Notes** · Type: **Long Text** · Name: `Notes`
+
+### — REVIEW PHASE (filled by admin) —
+
+**20. Status** · Type: **Status**
+Labels:
+- `Balanced` — green
+- `Over` — light blue
+- `Short` — red
+- `Needs Review` — orange
+- `Approved` — dark green
+- `Deposited` — black
+
+**21. Admin Notes** · Type: **Long Text**
+**22. Reviewed By** · Type: **People**
+
+### — DEPOSIT PHASE (filled next morning) —
+
+**23. To Deposit $** · Type: **Numbers** · Unit: `$`
+- Computed by app at close:
+  - Main: `Closing Count − 500`
+  - Patio: `Closing Count − Bank Returned to Main`
+
+**24. Deposited $** · Type: **Numbers** · Unit: `$` · Admin entry
+
+**25. Deposit Variance** · Type: **Numbers** · Unit: `$` · Allow negatives · Computed by app: `Deposited $ − To Deposit $`
+
+**26. Deposit Date** · Type: **Date** · Admin entry
+**27. Deposit Slip Photo** · Type: **File**
+**28. Bank Receipt Photo** · Type: **File**
+**29. Deposited By** · Type: **People**
+**30. Deposit Notes** · Type: **Long Text**
+
+**31. Submitted At** · Type: **Creation Log**
+
+---
+
+## 7. Field visibility by drawer type
+
+Not every field applies to both drawer types. The app will show/hide appropriately, and the board columns that don't apply simply stay empty.
+
+| Column | Main | Patio |
+|---|---|---|
+| Opening $ | Always $500 | Variable (from handoff) |
+| Bank Transferred to Patio | Sometimes > 0 | Always $0 |
+| Bank Returned from Patio | Sometimes > 0 | Always $0 |
+| Bank Returned to Main | Always $0 | Always > 0 if handoff happened |
+| To Deposit $ formula | `Close − 500` | `Close − Returned to Main` |
+
+---
+
+## 8. Views
+
+**View 1 — All Shifts** — default, sorted by Shift Date desc
+**View 2 — Needs Review** — filter: Status is Needs Review, Short, or Over
+**View 3 — Ready to Deposit** — filter: Status is Approved or Balanced AND Deposited $ is empty
+**View 4 — Patio Shifts Only** — filter: Drawer is Patio Bar
+**View 5 — Variance Trends** — chart, X: Shift Date (weekly), Y: sum(Variance)
+**View 6 — Deposit Dashboard** — chart, X: Deposit Date (weekly), Y: sum(Deposited $)
+**View 7 — By Bartender** — grouped by Bartender, last 30 days
+
+---
+
+## 9. Permissions
+
+| Role | Access |
+|---|---|
+| Admin | Full |
+| Bartender | No direct board access — app handles writes |
+
+---
+
+## 10. Automations
+
+**1. Route variance shifts**
+When new item created AND `Variance` ≠ 0 → move to group `Needs Review`
+
+**2. Route balanced shifts**
+When new item created AND `Variance` = 0 → move to group `This Week`
+
+**3. Auto-approve balanced shifts** (optional — turn on after trust is established)
+When new item created AND `Variance` = 0 → set `Status` to `Approved`
+
+**4. Notify admin on large close variance**
+When new item created AND (`Variance` > 20 OR `Variance` < -20) → notify Gentry
+
+**5. Route to Ready to Deposit**
+When `Status` changes to `Approved` → move to group `Ready to Deposit`
+
+**6. Route to Deposited**
+When `Status` changes to `Deposited` → move to group `Deposited`
+
+**7. Flag deposit variance**
+When `Deposit Variance` ≠ 0 AND `Deposited $` not empty → notify Gentry
+
+**8. Flag Main/Patio bank shortage**
+When `Drawer` is `Main Bar` AND `Bank Transferred to Patio` > 0 AND (`Bank Returned from Patio` < `Bank Transferred to Patio`) → notify Gentry with message "Patio bank short on [Shift]"
+
+**9. Morning deposit reminder** (Phase 3)
+Daily at 8 AM, if items exist in `Ready to Deposit` → notify Gentry
+
+**10. Archive old entries**
+When `Deposit Date` > 90 days ago → move to group `Archive`
+
+---
+
+## 11. App responsibilities summary (Phase 2+)
+
+**Bartender home screen:**
+- "Log Patio Handoff" button (Main bartenders only — app detects from context)
+- "Close Drawer" button → launches close flow
+
+**Close flow — Main Bar:**
+- Form with all close fields
+- Shows "$500 float" reminder
+- If any unconsumed handoffs for today exist, adds a section: "Patio handoff reconciliation"
+  - Transferred to Patio: [prefilled, read-only]
+  - Returned from Patio: [enter amount]
+- Photo capture
+- Submit → app computes Expected, Variance, To Deposit, writes to Monday, marks handoff as consumed
+
+**Close flow — Patio Bar:**
+- App looks for matching unconsumed handoff → if none, blocks with error
+- Form shows "Opening Bank from Main: $200" read-only
+- All standard close fields
+- New field: "Returning to Main: $___"
+- Photo capture
+- Submit → app updates handoff row with amountReturned, writes Patio close to Monday
+
+**Admin deposit flow:**
+- "Ready to Deposit" queue from Monday
+- Tap a shift → deposit form
+- `To Deposit $` read-only, `Deposited $` input, date, two photos, notes
+- Submit → app computes Deposit Variance, sets Status to `Deposited`
+
+---
+
+## 12. After the board is built
+
+1. Add the 11 new columns to the existing board (columns 11, 12, 14, 23–30 didn't exist in the previous version)
+2. Cursor queries the board via Monday API to grab all column IDs
+3. Drop the ID map into the app's config
+4. Build Phase 2 features
+
+---
+
+## 13. Design decisions and trade-offs
+
+- **Handoff log in app DB, not on Monday:** transient state (open for < 24 hours). No need for a separate board. Data lives in Postgres, gets reflected on the Monday close rows when they're submitted.
+- **Validation > flexibility:** blocking Patio close without a logged handoff forces discipline. If the app were permissive, the reconciliation would be meaningless — this is the whole point of tracking the handoff.
+- **Patio's Main bank returned as a real number field:** enables automation 8 (detect bank shortage automatically) and gives admin a clear audit trail.
+- **Main bar close on a Patio night has more fields:** but these auto-populate from the handoff log — the Main bartender just verifies the returned amount, doesn't re-enter it.
+- **Single board over two:** keeps reporting simple. "Show all deposits this month" is one filter, not a cross-board query.
+- **Opening $ field on Main is informational but validated:** always $500. If it's ever not, something's wrong upstream.

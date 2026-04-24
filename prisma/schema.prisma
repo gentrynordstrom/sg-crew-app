@@ -34,11 +34,38 @@ model User {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  timeEntries     TimeEntry[] @relation("TimeEntryUser")
-  lockedEntries   TimeEntry[] @relation("TimeEntryLockedBy")
+  timeEntries            TimeEntry[]    @relation("TimeEntryUser")
+  lockedEntries          TimeEntry[]    @relation("TimeEntryLockedBy")
+  mainHandoffs           PatioHandoff[] @relation("MainHandoffs")
+  patioHandoffs          PatioHandoff[] @relation("PatioHandoffs")
 
   @@index([isActive])
   @@map("users")
+}
+
+// Tracks cash transferred from the Main Bar float to Patio Bar at the start of
+// a Patio shift. Lives in Postgres (not Monday) because it's transient state
+// that only exists between the handoff log and both drawer closes.
+// Once Main's close is submitted the record is consumed and the amounts are
+// reflected on both Monday rows.
+model PatioHandoff {
+  id                   String    @id @default(cuid())
+  shiftDate            DateTime  @map("shift_date") @db.Date
+  amountTransferred    Float     @map("amount_transferred")
+  mainBartenderId      String    @map("main_bartender_id")
+  mainBartender        User      @relation("MainHandoffs", fields: [mainBartenderId], references: [id])
+  patioBartenderId     String    @map("patio_bartender_id")
+  patioBartender       User      @relation("PatioHandoffs", fields: [patioBartenderId], references: [id])
+  amountReturned       Float?    @map("amount_returned")
+  patioCloseSubmitted  Boolean   @default(false) @map("patio_close_submitted")
+  consumedByMainClose  Boolean   @default(false) @map("consumed_by_main_close")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@index([shiftDate])
+  @@index([mainBartenderId])
+  @@index([patioBartenderId])
+  @@map("patio_handoffs")
 }
 
 model TimeEntry {
