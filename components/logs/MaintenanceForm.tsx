@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createMaintenanceEntry } from "@/app/maintenance-log/actions";
 import { MAINTENANCE } from "@/lib/monday-schema";
+import { uploadFilesToMonday } from "@/lib/upload-file";
 import { TextField, SelectField, TextareaField } from "./FormField";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { SubmitButton } from "./SubmitButton";
@@ -20,8 +21,25 @@ export function MaintenanceForm({ defaultDate, crewName }: MaintenanceFormProps)
   async function handleSubmit(fd: FormData) {
     setFormError(null);
     try {
+      const beforePhotos = fd.getAll("beforePhotos") as File[];
+      const afterPhotos = fd.getAll("afterPhotos") as File[];
+      fd.delete("beforePhotos");
+      fd.delete("afterPhotos");
+
       const result = await createMaintenanceEntry(fd);
-      if (result?.error) { setFormError(result.error); return; }
+      if ("error" in result) { setFormError(result.error); return; }
+
+      const validBefore = beforePhotos.filter((f) => f.size > 0);
+      const validAfter = afterPhotos.filter((f) => f.size > 0);
+      await Promise.all([
+        validBefore.length > 0
+          ? uploadFilesToMonday(result.itemId, MAINTENANCE.columns.beforePictures.id, validBefore)
+          : Promise.resolve([]),
+        validAfter.length > 0
+          ? uploadFilesToMonday(result.itemId, MAINTENANCE.columns.afterPictures.id, validAfter)
+          : Promise.resolve([]),
+      ]);
+
       router.push("/maintenance-log");
       router.refresh();
     } catch {

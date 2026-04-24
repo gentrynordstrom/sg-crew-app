@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCleaningEntry } from "@/app/cleaning-log/actions";
 import { CLEANING } from "@/lib/monday-schema";
+import { uploadFilesToMonday } from "@/lib/upload-file";
 import { TextField, SelectField, TextareaField } from "./FormField";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { SubmitButton } from "./SubmitButton";
@@ -20,11 +21,22 @@ export function CleaningForm({ defaultDate, crewName }: CleaningFormProps) {
   async function handleSubmit(fd: FormData) {
     setFormError(null);
     try {
+      // Strip files from FormData — files are uploaded separately after item creation
+      const photos = fd.getAll("photos") as File[];
+      fd.delete("photos");
+
       const result = await createCleaningEntry(fd);
-      if (result?.error) {
+      if ("error" in result) {
         setFormError(result.error);
         return;
       }
+
+      // Upload files client-side (non-blocking — navigate even if upload fails)
+      const validPhotos = photos.filter((f) => f.size > 0);
+      if (validPhotos.length > 0) {
+        await uploadFilesToMonday(result.itemId, CLEANING.columns.afterPictures.id, validPhotos);
+      }
+
       router.push("/cleaning-log");
       router.refresh();
     } catch {

@@ -15,7 +15,7 @@ import {
 
 export async function createCruiseEntry(
   fd: FormData
-): Promise<{ error: string } | undefined> {
+): Promise<{ error: string } | { itemId: string }> {
   await requireRole(["CAPTAIN", "ADMIN"]);
 
   const date = (fd.get("date") as string) ?? "";
@@ -46,7 +46,7 @@ export async function createCruiseEntry(
   const itemName = date ? formatMdy(date) : "New Cruise";
 
   try {
-    await mondayQuery<{ create_item: { id: string } }>(
+    const result = await mondayQuery<{ create_item: { id: string } }>(
       `mutation ($boardId: ID!, $groupId: String!, $name: String!, $vals: JSON) {
          create_item(board_id: $boardId, group_id: $groupId, item_name: $name, column_values: $vals) { id }
        }`,
@@ -57,9 +57,9 @@ export async function createCruiseEntry(
         vals: JSON.stringify(columnValues),
       }
     );
+    revalidatePath("/cruise-log");
+    return { itemId: result.create_item.id };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to save entry. Please try again." };
   }
-
-  revalidatePath("/cruise-log");
 }

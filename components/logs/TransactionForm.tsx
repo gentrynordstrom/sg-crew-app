@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createTransactionEntry } from "@/app/transactions/actions";
 import { TRANSACTIONS } from "@/lib/monday-schema";
+import { uploadFilesToMonday } from "@/lib/upload-file";
 import { TextField, SelectField, TextareaField } from "./FormField";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { SubmitButton } from "./SubmitButton";
@@ -20,8 +21,17 @@ export function TransactionForm({ defaultDate, defaultPerson }: TransactionFormP
   async function handleSubmit(fd: FormData) {
     setFormError(null);
     try {
+      const receipts = fd.getAll("receipts") as File[];
+      fd.delete("receipts");
+
       const result = await createTransactionEntry(fd);
-      if (result?.error) { setFormError(result.error); return; }
+      if ("error" in result) { setFormError(result.error); return; }
+
+      const validReceipts = receipts.filter((f) => f.size > 0);
+      if (validReceipts.length > 0) {
+        await uploadFilesToMonday(result.itemId, TRANSACTIONS.columns.receipts.id, validReceipts);
+      }
+
       router.push("/transactions");
       router.refresh();
     } catch {

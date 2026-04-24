@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createDrawerCloseEntry } from "@/app/drawer-close/actions";
 import { DRAWER_CLOSE } from "@/lib/monday-schema";
+import { uploadFileToMonday } from "@/lib/upload-file";
 import { SelectField, TextareaField } from "./FormField";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { SubmitButton } from "./SubmitButton";
@@ -112,11 +113,19 @@ export function DrawerCloseForm({
   async function handleSubmit(fd: FormData) {
     setFormError(null);
     try {
+      const posPhoto = fd.get("posPhoto") as File | null;
+      fd.delete("posPhoto");
+
       const result = await createDrawerCloseEntry(fd);
-      if (result?.error) {
+      if ("error" in result) {
         setFormError(result.error);
         return;
       }
+
+      if (posPhoto && posPhoto.size > 0) {
+        await uploadFileToMonday(result.itemId, DRAWER_CLOSE.columns.posPhoto.id, posPhoto);
+      }
+
       router.push("/drawer-close");
       router.refresh();
     } catch {

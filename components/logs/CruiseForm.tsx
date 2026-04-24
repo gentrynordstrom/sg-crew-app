@@ -20,7 +20,7 @@ export function CruiseForm({ defaultCaptain, defaultDate }: CruiseFormProps) {
     setFormError(null);
     try {
       const result = await createCruiseEntry(fd);
-      if (result?.error) {
+      if (result && "error" in result) {
         setFormError(result.error);
         return;
       }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { mondayQuery, mondayUploadFile } from "@/lib/monday";
+import { mondayQuery } from "@/lib/monday";
 import { DRAWER_CLOSE } from "@/lib/monday-schema";
 import {
   buildColumnValues,
@@ -125,7 +125,7 @@ export async function logPatioHandoff(
 
 export async function createDrawerCloseEntry(
   fd: FormData
-): Promise<{ error: string } | undefined> {
+): Promise<{ error: string } | { itemId: string }> {
   const user = await requireRole(["HOSPITALITY", "ADMIN"]);
 
   const date = (fd.get("shiftDate") as string) ?? "";
@@ -260,14 +260,8 @@ export async function createDrawerCloseEntry(
     }
   );
 
-  const newItemId = result.create_item.id;
-
-  const posPhoto = fd.get("posPhoto") as File | null;
-  if (posPhoto && posPhoto.size > 0) {
-    await mondayUploadFile(newItemId, DRAWER_CLOSE.columns.posPhoto.id, posPhoto);
-  }
-
   revalidatePath("/drawer-close");
+  return { itemId: result.create_item.id };
 }
 
 // ─── Admin deposit submission ─────────────────────────────────────────────────
@@ -275,7 +269,7 @@ export async function createDrawerCloseEntry(
 export async function createDepositEntry(
   itemId: string,
   fd: FormData
-): Promise<{ error: string } | undefined> {
+): Promise<{ error: string } | { itemId: string }> {
   const user = await requireAdmin();
 
   const depositedAmount = parseNum(fd.get("deposited"));
@@ -315,10 +309,6 @@ export async function createDepositEntry(
     return { error: e instanceof Error ? e.message : "Failed to save deposit. Please try again." };
   }
 
-  const bankPhoto = fd.get("bankReceiptPhoto") as File | null;
-  if (bankPhoto && bankPhoto.size > 0) {
-    try { await mondayUploadFile(itemId, DRAWER_CLOSE.columns.bankReceiptPhoto.id, bankPhoto); } catch { /* non-fatal */ }
-  }
-
   revalidatePath("/drawer-close");
+  return { itemId };
 }

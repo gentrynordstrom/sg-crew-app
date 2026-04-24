@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
-import { mondayQuery, mondayUploadFile } from "@/lib/monday";
+import { mondayQuery } from "@/lib/monday";
 import { CLEANING } from "@/lib/monday-schema";
 import {
   buildColumnValues,
@@ -14,7 +14,7 @@ import {
 
 export async function createCleaningEntry(
   fd: FormData
-): Promise<{ error: string } | undefined> {
+): Promise<{ error: string } | { itemId: string }> {
   const user = await requireRole(["CAPTAIN", "DECKHAND", "HOSPITALITY", "ADMIN"]);
 
   const date = (fd.get("date") as string) ?? "";
@@ -34,7 +34,6 @@ export async function createCleaningEntry(
     ? `${formatMdy(date)} - ${user.name}`
     : `Cleaning - ${user.name}`;
 
-  let newItemId: string;
   try {
     const result = await mondayQuery<{ create_item: { id: string } }>(
       `mutation ($boardId: ID!, $groupId: String!, $name: String!, $vals: JSON) {
@@ -47,22 +46,9 @@ export async function createCleaningEntry(
         vals: JSON.stringify(columnValues),
       }
     );
-    newItemId = result.create_item.id;
+    revalidatePath("/cleaning-log");
+    return { itemId: result.create_item.id };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to save entry. Please try again." };
   }
-
-  // Upload after-pictures if provided (best-effort; don't fail the whole entry)
-  const photos = fd.getAll("photos") as File[];
-  for (const photo of photos) {
-    if (photo.size > 0) {
-      try {
-        await mondayUploadFile(newItemId, CLEANING.columns.afterPictures.id, photo);
-      } catch {
-        // photo upload failure is non-fatal
-      }
-    }
-  }
-
-  revalidatePath("/cleaning-log");
 }

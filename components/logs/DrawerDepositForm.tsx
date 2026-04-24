@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createDepositEntry } from "@/app/drawer-close/actions";
 import { DRAWER_CLOSE } from "@/lib/monday-schema";
+import { uploadFileToMonday } from "@/lib/upload-file";
 import { TextareaField } from "./FormField";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { SubmitButton } from "./SubmitButton";
@@ -38,8 +39,16 @@ export function DrawerDepositForm({
   async function handleSubmit(fd: FormData) {
     setFormError(null);
     try {
+      const bankPhoto = fd.get("bankReceiptPhoto") as File | null;
+      fd.delete("bankReceiptPhoto");
+
       const result = await createDepositEntry(itemId, fd);
-      if (result?.error) { setFormError(result.error); return; }
+      if ("error" in result) { setFormError(result.error); return; }
+
+      if (bankPhoto && bankPhoto.size > 0) {
+        await uploadFileToMonday(result.itemId, DRAWER_CLOSE.columns.bankReceiptPhoto.id, bankPhoto);
+      }
+
       router.push("/drawer-close");
       router.refresh();
     } catch {
