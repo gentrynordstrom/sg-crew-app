@@ -27,7 +27,7 @@ interface TextareaFieldProps extends BaseProps {
 }
 
 const inputClass =
-  "w-full rounded-xl bg-brand-moss-800/60 px-4 py-3 text-brand-cream-100 placeholder-brand-cream-600 ring-1 ring-brand-cream-900/40 focus:outline-none focus:ring-2 focus:ring-brand-brass-400 min-h-[48px]";
+  "w-full appearance-none rounded-xl bg-brand-moss-800/60 px-4 py-3 text-brand-cream-100 placeholder-brand-cream-600 ring-1 ring-brand-cream-900/40 focus:outline-none focus:ring-2 focus:ring-brand-brass-400 min-h-[48px]";
 
 const labelClass = "mb-1.5 block text-sm font-medium text-brand-cream-300";
 

@@ -7,8 +7,6 @@ import { SelectField, TextareaField } from "./FormField";
 import { AttachmentPicker } from "./AttachmentPicker";
 import { SubmitButton } from "./SubmitButton";
 
-const MAIN_FLOAT = 500;
-
 interface PatioHandoffInfo {
   id: string;
   amountTransferred: number;
@@ -24,9 +22,7 @@ interface MainHandoffInfo {
 interface DrawerCloseFormProps {
   defaultBartender: string;
   defaultDate: string;
-  /** For Patio: the open handoff from the main bartender, or null if none */
   patioHandoff: PatioHandoffInfo | null;
-  /** For Main: any active handoffs this bartender made today */
   mainHandoffs: MainHandoffInfo[];
 }
 
@@ -47,8 +43,10 @@ export function DrawerCloseForm({
   mainHandoffs,
 }: DrawerCloseFormProps) {
   const [drawer, setDrawer] = useState<"Main Bar" | "Patio Bar">("Main Bar");
+  const [openingCash, setOpeningCash] = useState("500");
   const [posSales, setPosSales] = useState("");
   const [cashSales, setCashSales] = useState("");
+  const [cardTips, setCardTips] = useState("");
   const [payouts, setPayouts] = useState("");
   const [closingCount, setClosingCount] = useState("");
   const [bankReturnedToMain, setBankReturnedToMain] = useState("");
@@ -60,10 +58,11 @@ export function DrawerCloseForm({
   const payoutsAmt = parseAmt(payouts);
   const closingCountAmt = parseAmt(closingCount);
 
-  // Opening
-  const opening = drawer === "Main Bar"
-    ? MAIN_FLOAT
-    : patioHandoff?.amountTransferred ?? 0;
+  // Opening amount
+  const opening =
+    drawer === "Main Bar"
+      ? parseAmt(openingCash)
+      : patioHandoff?.amountTransferred ?? 0;
 
   // Handoff totals (Main only)
   const transferredToPatio = mainHandoffs.reduce((s, h) => s + h.amountTransferred, 0);
@@ -100,7 +99,6 @@ export function DrawerCloseForm({
       ? `Short ${fmt(Math.abs(variance))}`
       : `Over ${fmt(variance)}`;
 
-  // Patio blocked if no handoff
   const patioBlocked = drawer === "Patio Bar" && !patioHandoff;
 
   return (
@@ -116,7 +114,7 @@ export function DrawerCloseForm({
           type="date"
           defaultValue={defaultDate}
           required
-          className="w-full rounded-xl bg-brand-moss-800/60 px-4 py-3 text-brand-cream-100 ring-1 ring-brand-cream-900/40 focus:outline-none focus:ring-2 focus:ring-brand-brass-400 min-h-[48px]"
+          className="w-full appearance-none rounded-xl bg-brand-moss-800/60 px-4 py-3 text-brand-cream-100 ring-1 ring-brand-cream-900/40 focus:outline-none focus:ring-2 focus:ring-brand-brass-400 min-h-[48px]"
         />
       </div>
 
@@ -165,7 +163,7 @@ export function DrawerCloseForm({
         </div>
       )}
 
-      {/* Patio handoff banner */}
+      {/* Patio: read-only opening bank from handoff */}
       {drawer === "Patio Bar" && patioHandoff && (
         <div className="rounded-xl bg-brand-moss-800/60 px-4 py-3 ring-1 ring-brand-brass-500/30">
           <p className="text-sm text-brand-cream-400">
@@ -174,17 +172,19 @@ export function DrawerCloseForm({
           <p className="text-xl font-bold text-brand-brass-300">
             ${patioHandoff.amountTransferred.toFixed(2)}
           </p>
-          <input type="hidden" name="opening" value={patioHandoff.amountTransferred} />
+          <input type="hidden" name="openingAmount" value={patioHandoff.amountTransferred} />
         </div>
       )}
 
-      {/* Main float reminder */}
+      {/* Main Bar: editable Opening Cash (pre-filled $500) */}
       {drawer === "Main Bar" && (
-        <div className="rounded-xl bg-brand-moss-800/60 px-4 py-3 ring-1 ring-brand-cream-900/30">
-          <p className="text-sm text-brand-cream-400">Opening float (fixed)</p>
-          <p className="text-xl font-bold text-brand-cream-100">$500.00</p>
-          <input type="hidden" name="openingAmount" value={MAIN_FLOAT} />
-        </div>
+        <MoneyField
+          name="openingAmount"
+          label="Opening Cash"
+          value={openingCash}
+          onChange={setOpeningCash}
+          required
+        />
       )}
 
       <SelectField
@@ -202,12 +202,12 @@ export function DrawerCloseForm({
 
       <div className="grid grid-cols-2 gap-4">
         <MoneyField name="cashSales" label="Cash Sales" value={cashSales} onChange={setCashSales} required />
-        <MoneyField name="tipsCreditCard" label="Card Tips" value="" onChange={() => {}} />
+        <MoneyField name="tipsCreditCard" label="Card Tips" value={cardTips} onChange={setCardTips} />
       </div>
 
       <MoneyField name="payouts" label="Payouts" value={payouts} onChange={setPayouts} />
 
-      {/* Patio: return amount */}
+      {/* Patio: return amount to Main */}
       {drawer === "Patio Bar" && patioHandoff && (
         <MoneyField
           name="bankReturnedToMain"
@@ -264,7 +264,7 @@ export function DrawerCloseForm({
         </div>
       )}
 
-      {/* If no calc yet, still need closing count */}
+      {/* If calc not shown yet, still need closing count */}
       {!hasCalc && (
         <MoneyField
           name="closingCount"
@@ -284,10 +284,7 @@ export function DrawerCloseForm({
         capture="environment"
       />
 
-      <SubmitButton
-        label="Submit Drawer Close"
-        pendingLabel="Submitting…"
-      />
+      <SubmitButton label="Submit Drawer Close" pendingLabel="Submitting…" />
     </form>
   );
 }

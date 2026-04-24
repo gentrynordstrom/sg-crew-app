@@ -15,21 +15,29 @@ import {
   formatMdy,
 } from "@/lib/monday-values";
 
-const MAIN_FLOAT = 500;
-
 function parseNum(val: FormDataEntryValue | null): number {
   const n = parseFloat((val as string) ?? "");
   return isNaN(n) ? 0 : n;
 }
 
-// ─── Patio Handoff helpers ───────────────────────────────────────────────────
+// ─── Date helpers ─────────────────────────────────────────────────────────────
 
 /** Returns today's date as a UTC midnight Date (for DB queries). */
 function todayDate(): Date {
   const now = new Date();
-  return new Date(
-    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
-  );
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+}
+
+/**
+ * Returns a Prisma gte/lt range covering the full UTC calendar day of `d`.
+ * Safer than exact equality against @db.Date columns when timezone drift
+ * can cause a full-timestamp match to miss.
+ */
+function utcDayRange(d: Date): { gte: Date; lt: Date } {
+  const ymd = d.toISOString().slice(0, 10);
+  const start = new Date(ymd + "T00:00:00.000Z");
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { gte: start, lt: end };
 }
 
 /**
@@ -43,10 +51,11 @@ export async function findOpenPatioHandoff(
   return prisma.patioHandoff.findFirst({
     where: {
       patioBartenderId,
-      shiftDate,
+      shiftDate: utcDayRange(shiftDate),
       patioCloseSubmitted: false,
     },
     include: { mainBartender: true },
+    orderBy: { createdAt: "desc" },
   });
 }
 
@@ -61,10 +70,11 @@ export async function findActiveMainHandoffs(
   return prisma.patioHandoff.findMany({
     where: {
       mainBartenderId,
-      shiftDate,
+      shiftDate: utcDayRange(shiftDate),
       consumedByMainClose: false,
     },
     include: { patioBartender: true },
+    orderBy: { createdAt: "asc" },
   });
 }
 
@@ -135,7 +145,7 @@ export async function createDrawerCloseEntry(fd: FormData) {
   let handoffNote = "";
 
   if (drawerType === "Main Bar") {
-    opening = MAIN_FLOAT;
+    opening = parseNum(fd.get("openingAmount")) || 500;
 
     // Check for any active Patio handoffs this Main bartender made today
     const handoffs = await findActiveMainHandoffs(user.id, shiftDateObj);
@@ -195,11 +205,11 @@ export async function createDrawerCloseEntry(fd: FormData) {
   }
 
   // To Deposit:
-  // Main: closing count - $500 float
+  // Main: closing count - opening cash float
   // Patio: closing count - bank returned to main
   let toDeposit: number;
   if (drawerType === "Main Bar") {
-    toDeposit = closingCount - MAIN_FLOAT;
+    toDeposit = closingCount - opening;
   } else {
     const bankReturnedToMain = parseNum(fd.get("bankReturnedToMain"));
     toDeposit = closingCount - bankReturnedToMain;
