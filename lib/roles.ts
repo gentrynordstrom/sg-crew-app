@@ -126,6 +126,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "chatbot",
   ],
   HOSPITALITY: [
+    "cleaning-log",
     "drawer-close",
     "transactions",
     "time-tracking",

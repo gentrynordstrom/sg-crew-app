@@ -74,17 +74,19 @@ export function DrawerCloseForm({
     0
   );
 
-  // Expected Cash
+  const cardTipsAmt = parseAmt(cardTips);
+
+  // Expected Cash: Opening + Cash Sales - Card Tips (tips are pulled from the drawer as payouts)
   let expectedCash: number;
   if (drawer === "Main Bar") {
-    expectedCash = opening + cashSalesAmt - payoutsAmt - transferredToPatio + returnedFromPatio;
+    expectedCash = opening + cashSalesAmt - cardTipsAmt - transferredToPatio + returnedFromPatio;
   } else {
     const bankReturnedAmt = parseAmt(bankReturnedToMain);
-    expectedCash = opening + cashSalesAmt - payoutsAmt - bankReturnedAmt;
+    expectedCash = opening + cashSalesAmt - cardTipsAmt - bankReturnedAmt;
   }
 
   const variance = closingCountAmt - expectedCash;
-  const hasCalc = cashSales || closingCount || drawer === "Patio Bar";
+  const hasCalc = cashSales || cardTips || closingCount || drawer === "Patio Bar";
 
   const varianceColor =
     Math.abs(variance) < 0.01

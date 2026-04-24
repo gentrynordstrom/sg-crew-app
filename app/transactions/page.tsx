@@ -23,12 +23,13 @@ interface BoardResponse {
 }
 
 export default async function TransactionsPage() {
-  await requireRole(["CAPTAIN", "DECKHAND", "MECHANIC", "HOSPITALITY", "ADMIN"]);
+  const user = await requireRole(["CAPTAIN", "DECKHAND", "MECHANIC", "HOSPITALITY", "ADMIN"]);
+  const isAdmin = user.role === "ADMIN";
 
   const query = `
     query ($boardId: ID!) {
       boards(ids: [$boardId]) {
-        items_page(limit: 25, query_params: {
+        items_page(limit: 100, query_params: {
           order_by: [{ column_id: "__last_updated__", direction: desc }]
         }) {
           items {
@@ -50,10 +51,10 @@ export default async function TransactionsPage() {
     }
   `;
 
-  let items: MondayItem[] = [];
+  let allItems: MondayItem[] = [];
   try {
     const data = await mondayQuery<BoardResponse>(query, { boardId: TRANSACTIONS.boardId });
-    items = data.boards[0]?.items_page?.items ?? [];
+    allItems = data.boards[0]?.items_page?.items ?? [];
   } catch (err) {
     console.error("Failed to load transactions:", err);
   }
@@ -61,6 +62,13 @@ export default async function TransactionsPage() {
   function col(item: MondayItem, id: string) {
     return item.column_values.find((c) => c.id === id)?.text ?? "";
   }
+
+  const firstName = user.name.split(" ")[0].toLowerCase();
+  const items = isAdmin
+    ? allItems
+    : allItems.filter((item) =>
+        col(item, TRANSACTIONS.columns.person.id).toLowerCase().includes(firstName)
+      );
 
   return (
     <main className="min-h-screen bg-brand-moss-700 px-4 py-8">

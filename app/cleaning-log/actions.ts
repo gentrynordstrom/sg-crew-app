@@ -16,7 +16,7 @@ import {
 export async function createCleaningEntry(
   fd: FormData
 ): Promise<{ error: string } | undefined> {
-  const user = await requireRole(["CAPTAIN", "DECKHAND", "ADMIN"]);
+  const user = await requireRole(["CAPTAIN", "DECKHAND", "HOSPITALITY", "ADMIN"]);
 
   const date = (fd.get("date") as string) ?? "";
   const cleaningType = (fd.get("cleaningType") as string) ?? "";

@@ -23,12 +23,13 @@ interface BoardResponse {
 }
 
 export default async function MaintenanceLogPage() {
-  await requireRole(["CAPTAIN", "DECKHAND", "MECHANIC", "ADMIN"]);
+  const user = await requireRole(["CAPTAIN", "DECKHAND", "MECHANIC", "ADMIN"]);
+  const isAdmin = user.role === "ADMIN";
 
   const query = `
     query ($boardId: ID!) {
       boards(ids: [$boardId]) {
-        items_page(limit: 25, query_params: {
+        items_page(limit: 100, query_params: {
           order_by: [{ column_id: "__last_updated__", direction: desc }]
         }) {
           items {
@@ -49,10 +50,10 @@ export default async function MaintenanceLogPage() {
     }
   `;
 
-  let items: MondayItem[] = [];
+  let allItems: MondayItem[] = [];
   try {
     const data = await mondayQuery<BoardResponse>(query, { boardId: MAINTENANCE.boardId });
-    items = data.boards[0]?.items_page?.items ?? [];
+    allItems = data.boards[0]?.items_page?.items ?? [];
   } catch (err) {
     console.error("Failed to load maintenance log:", err);
   }
@@ -60,6 +61,12 @@ export default async function MaintenanceLogPage() {
   function col(item: MondayItem, id: string) {
     return item.column_values.find((c) => c.id === id)?.text ?? "";
   }
+
+  const items = isAdmin
+    ? allItems
+    : allItems.filter((item) =>
+        col(item, MAINTENANCE.columns.crewMember.id).toLowerCase() === user.name.toLowerCase()
+      );
 
   return (
     <main className="min-h-screen bg-brand-moss-700 px-4 py-8">

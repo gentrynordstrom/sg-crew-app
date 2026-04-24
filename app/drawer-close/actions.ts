@@ -169,8 +169,8 @@ export async function createDrawerCloseEntry(
       });
     }
 
-    // Main Expected: float + cash sales - payouts - transferred + returned
-    expectedCash = opening + cashSales - payouts - transferredToPatio + returnedFromPatio;
+    // Main Expected: opening + cash sales - card tips (tips paid out from drawer) - transferred + returned
+    expectedCash = opening + cashSales - tipsCreditCard - transferredToPatio + returnedFromPatio;
   } else {
     // Patio Bar — require a logged handoff
     const handoff = await findOpenPatioHandoff(user.id, shiftDateObj);
@@ -183,8 +183,8 @@ export async function createDrawerCloseEntry(
     opening = handoff.amountTransferred;
     const bankReturnedToMain = parseNum(fd.get("bankReturnedToMain"));
 
-    // Patio Expected: bank from Main + cash sales - payouts - returned to Main
-    expectedCash = opening + cashSales - payouts - bankReturnedToMain;
+    // Patio Expected: bank from Main + cash sales - card tips - returned to Main
+    expectedCash = opening + cashSales - tipsCreditCard - bankReturnedToMain;
     handoffNote = `Opening bank from Main: $${opening.toFixed(2)}. Returned to Main: $${bankReturnedToMain.toFixed(2)}. `;
 
     // Mark handoff as patio-close-submitted with returned amount

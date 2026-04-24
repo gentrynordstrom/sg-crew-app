@@ -5,7 +5,7 @@ import { CleaningForm } from "@/components/logs/CleaningForm";
 export const dynamic = "force-dynamic";
 
 export default async function NewCleaningEntryPage() {
-  const user = await requireRole(["CAPTAIN", "DECKHAND", "ADMIN"]);
+  const user = await requireRole(["CAPTAIN", "DECKHAND", "HOSPITALITY", "ADMIN"]);
   const today = new Date().toISOString().slice(0, 10);
 
   return (
