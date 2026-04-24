@@ -75,6 +75,7 @@ export function AttachmentPicker({
                   key={i}
                   src={p.src}
                   className="h-24 w-full rounded-lg object-cover bg-black"
+                  preload="metadata"
                   muted
                   playsInline
                 />

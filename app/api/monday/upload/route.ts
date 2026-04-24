@@ -1,37 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { mondayUploadFile } from "@/lib/monday";
+import { getPublicUrl } from "@/lib/supabase-server";
 
-// Node.js runtime so we can handle large binary request bodies
 export const runtime = "nodejs";
 
+/**
+ * POST { itemId, columnId, supabasePath }
+ *
+ * The browser uploads files directly to Supabase Storage (bypassing Vercel's
+ * 4.5 MB request-body limit). Once the upload completes it calls this route
+ * with just the storage path. We then fetch the file server-to-server
+ * (Supabase → Vercel → Monday), which has no inbound size restriction.
+ */
 export async function POST(req: NextRequest) {
-  // Require an active session
   const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let formData: FormData;
+  let body: { itemId?: string; columnId?: string; supabasePath?: string };
   try {
-    formData = await req.formData();
+    body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Failed to parse upload" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const itemId = formData.get("itemId") as string | null;
-  const columnId = formData.get("columnId") as string | null;
-  const file = formData.get("file") as File | null;
-
-  if (!itemId || !columnId || !file || file.size === 0) {
-    return NextResponse.json({ error: "Missing itemId, columnId, or file" }, { status: 400 });
+  const { itemId, columnId, supabasePath } = body;
+  if (!itemId || !columnId || !supabasePath) {
+    return NextResponse.json({ error: "Missing itemId, columnId, or supabasePath" }, { status: 400 });
   }
+
+  // Fetch the file from Supabase Storage (server-to-server — no size limit)
+  const publicUrl = getPublicUrl(supabasePath);
+  let fileRes: Response;
+  try {
+    fileRes = await fetch(publicUrl);
+    if (!fileRes.ok) throw new Error(`Supabase fetch failed: ${fileRes.status}`);
+  } catch (e) {
+    return NextResponse.json(
+      { error: `Could not fetch file from storage: ${e instanceof Error ? e.message : e}` },
+      { status: 502 }
+    );
+  }
+
+  // Convert to a File object for mondayUploadFile
+  const blob = await fileRes.blob();
+  const filename = supabasePath.split("/").pop() ?? "upload";
+  const file = new File([blob], filename, { type: blob.type });
 
   try {
     await mondayUploadFile(itemId, columnId, file);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Upload failed";
+    const msg = e instanceof Error ? e.message : "Upload to Monday failed";
     console.error("Monday file upload error:", msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }

@@ -46,6 +46,7 @@ export function DrawerCloseForm({
 }: DrawerCloseFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
   const [drawer, setDrawer] = useState<"Main Bar" | "Patio Bar">("Main Bar");
   const [openingCash, setOpeningCash] = useState("500");
   const [posSales, setPosSales] = useState("");
@@ -112,6 +113,7 @@ export function DrawerCloseForm({
 
   async function handleSubmit(fd: FormData) {
     setFormError(null);
+    setUploadWarning(null);
     try {
       const posPhoto = fd.get("posPhoto") as File | null;
       fd.delete("posPhoto");
@@ -123,7 +125,11 @@ export function DrawerCloseForm({
       }
 
       if (posPhoto && posPhoto.size > 0) {
-        await uploadFileToMonday(result.itemId, DRAWER_CLOSE.columns.posPhoto.id, posPhoto);
+        const err = await uploadFileToMonday(result.itemId, DRAWER_CLOSE.columns.posPhoto.id, posPhoto);
+        if (err) {
+          setUploadWarning("Entry saved, but the POS photo could not be attached.");
+          await new Promise((r) => setTimeout(r, 3000));
+        }
       }
 
       router.push("/drawer-close");
@@ -138,6 +144,11 @@ export function DrawerCloseForm({
       {formError && (
         <div className="rounded-xl border border-red-700/40 bg-red-900/20 px-4 py-3 text-sm text-red-300">
           {formError}
+        </div>
+      )}
+      {uploadWarning && (
+        <div className="rounded-xl border border-amber-700/40 bg-amber-900/20 px-4 py-3 text-sm text-amber-300">
+          {uploadWarning}
         </div>
       )}
       {/* Date */}

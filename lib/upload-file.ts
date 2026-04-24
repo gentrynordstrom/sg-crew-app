@@ -1,7 +1,11 @@
 /**
- * Upload a file to a Monday.com item column via the /api/monday/upload route.
- * Called from client components AFTER the item has been created so the file
- * upload is decoupled from the main form submission.
+ * Upload a file to a Monday.com item column.
+ *
+ * Flow (bypasses Vercel's 4.5 MB serverless body limit):
+ *   1. GET /api/upload/presign → Supabase signed upload URL
+ *   2. PUT file directly from browser to Supabase Storage CDN
+ *   3. POST { itemId, columnId, supabasePath } to /api/monday/upload
+ *      → server fetches file from Supabase → uploads to Monday
  *
  * Returns null on success, or an error message string on failure.
  */
@@ -12,26 +16,58 @@ export async function uploadFileToMonday(
 ): Promise<string | null> {
   if (file.size === 0) return null;
 
-  const fd = new FormData();
-  fd.append("itemId", itemId);
-  fd.append("columnId", columnId);
-  fd.append("file", file);
-
+  // ── Step 1: get a presigned Supabase upload URL ───────────────────────────
+  let presignData: { signedUrl: string; path: string };
   try {
-    const res = await fetch("/api/monday/upload", { method: "POST", body: fd });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      return (body as { error?: string }).error ?? `Upload failed (${res.status})`;
+    const presignRes = await fetch(
+      `/api/upload/presign?filename=${encodeURIComponent(file.name)}`
+    );
+    if (!presignRes.ok) {
+      const b = await presignRes.json().catch(() => ({}));
+      return (b as { error?: string }).error ?? `Could not get upload URL (${presignRes.status})`;
+    }
+    presignData = await presignRes.json();
+  } catch (e) {
+    return e instanceof Error ? e.message : "Could not get upload URL";
+  }
+
+  // ── Step 2: PUT file directly from the browser to Supabase CDN ───────────
+  // This request goes to supabase.co, NOT through our Vercel function,
+  // so there is no 4.5 MB limit on it.
+  try {
+    const putRes = await fetch(presignData.signedUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+    if (!putRes.ok) {
+      const txt = await putRes.text().catch(() => `${putRes.status}`);
+      return `Storage upload failed: ${txt}`;
+    }
+  } catch (e) {
+    return e instanceof Error ? e.message : "Storage upload failed";
+  }
+
+  // ── Step 3: tell our server to move it from Supabase → Monday ─────────────
+  try {
+    const mondayRes = await fetch("/api/monday/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId, columnId, supabasePath: presignData.path }),
+    });
+    if (!mondayRes.ok) {
+      const b = await mondayRes.json().catch(() => ({}));
+      return (b as { error?: string }).error ?? `Monday upload failed (${mondayRes.status})`;
     }
     return null;
   } catch (e) {
-    return e instanceof Error ? e.message : "Upload failed";
+    return e instanceof Error ? e.message : "Monday upload failed";
   }
 }
 
 /**
- * Upload multiple files to the same Monday column. Non-fatal: collects errors
- * but doesn't stop on the first failure so all files are attempted.
+ * Upload multiple files to the same Monday column. Collects but does not
+ * throw errors — all files are attempted even if earlier ones fail.
  */
 export async function uploadFilesToMonday(
   itemId: string,

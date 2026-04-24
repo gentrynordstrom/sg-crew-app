@@ -17,11 +17,12 @@ interface CleaningFormProps {
 export function CleaningForm({ defaultDate, crewName }: CleaningFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
   async function handleSubmit(fd: FormData) {
     setFormError(null);
+    setUploadWarning(null);
     try {
-      // Strip files from FormData — files are uploaded separately after item creation
       const photos = fd.getAll("photos") as File[];
       fd.delete("photos");
 
@@ -31,10 +32,14 @@ export function CleaningForm({ defaultDate, crewName }: CleaningFormProps) {
         return;
       }
 
-      // Upload files client-side (non-blocking — navigate even if upload fails)
       const validPhotos = photos.filter((f) => f.size > 0);
       if (validPhotos.length > 0) {
-        await uploadFilesToMonday(result.itemId, CLEANING.columns.afterPictures.id, validPhotos);
+        const errs = await uploadFilesToMonday(result.itemId, CLEANING.columns.afterPictures.id, validPhotos);
+        if (errs.length > 0) {
+          setUploadWarning(`Entry saved, but ${errs.length} file(s) could not be attached. Please try re-attaching from the entry detail.`);
+          // Give user a moment to see the warning before navigating
+          await new Promise((r) => setTimeout(r, 3000));
+        }
       }
 
       router.push("/cleaning-log");
@@ -53,6 +58,11 @@ export function CleaningForm({ defaultDate, crewName }: CleaningFormProps) {
       {formError && (
         <div className="rounded-xl border border-red-700/40 bg-red-900/20 px-4 py-3 text-sm text-red-300">
           {formError}
+        </div>
+      )}
+      {uploadWarning && (
+        <div className="rounded-xl border border-amber-700/40 bg-amber-900/20 px-4 py-3 text-sm text-amber-300">
+          {uploadWarning}
         </div>
       )}
 

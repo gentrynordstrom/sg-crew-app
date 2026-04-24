@@ -17,9 +17,11 @@ interface TransactionFormProps {
 export function TransactionForm({ defaultDate, defaultPerson }: TransactionFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
   async function handleSubmit(fd: FormData) {
     setFormError(null);
+    setUploadWarning(null);
     try {
       const receipts = fd.getAll("receipts") as File[];
       fd.delete("receipts");
@@ -29,7 +31,11 @@ export function TransactionForm({ defaultDate, defaultPerson }: TransactionFormP
 
       const validReceipts = receipts.filter((f) => f.size > 0);
       if (validReceipts.length > 0) {
-        await uploadFilesToMonday(result.itemId, TRANSACTIONS.columns.receipts.id, validReceipts);
+        const errs = await uploadFilesToMonday(result.itemId, TRANSACTIONS.columns.receipts.id, validReceipts);
+        if (errs.length > 0) {
+          setUploadWarning(`Entry saved, but ${errs.length} file(s) could not be attached.`);
+          await new Promise((r) => setTimeout(r, 3000));
+        }
       }
 
       router.push("/transactions");
@@ -44,6 +50,11 @@ export function TransactionForm({ defaultDate, defaultPerson }: TransactionFormP
       {formError && (
         <div className="rounded-xl border border-red-700/40 bg-red-900/20 px-4 py-3 text-sm text-red-300">
           {formError}
+        </div>
+      )}
+      {uploadWarning && (
+        <div className="rounded-xl border border-amber-700/40 bg-amber-900/20 px-4 py-3 text-sm text-amber-300">
+          {uploadWarning}
         </div>
       )}
       <TextField

@@ -29,6 +29,7 @@ export function DrawerDepositForm({
   const router = useRouter();
   const [deposited, setDeposited] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
   const depositedAmt = parseFloat(deposited) || 0;
   const depositVariance = depositedAmt - toDeposit;
@@ -38,6 +39,7 @@ export function DrawerDepositForm({
 
   async function handleSubmit(fd: FormData) {
     setFormError(null);
+    setUploadWarning(null);
     try {
       const bankPhoto = fd.get("bankReceiptPhoto") as File | null;
       fd.delete("bankReceiptPhoto");
@@ -46,7 +48,11 @@ export function DrawerDepositForm({
       if ("error" in result) { setFormError(result.error); return; }
 
       if (bankPhoto && bankPhoto.size > 0) {
-        await uploadFileToMonday(result.itemId, DRAWER_CLOSE.columns.bankReceiptPhoto.id, bankPhoto);
+        const err = await uploadFileToMonday(result.itemId, DRAWER_CLOSE.columns.bankReceiptPhoto.id, bankPhoto);
+        if (err) {
+          setUploadWarning("Deposit saved, but the receipt photo could not be attached.");
+          await new Promise((r) => setTimeout(r, 3000));
+        }
       }
 
       router.push("/drawer-close");
@@ -63,6 +69,11 @@ export function DrawerDepositForm({
       {formError && (
         <div className="rounded-xl border border-red-700/40 bg-red-900/20 px-4 py-3 text-sm text-red-300">
           {formError}
+        </div>
+      )}
+      {uploadWarning && (
+        <div className="rounded-xl border border-amber-700/40 bg-amber-900/20 px-4 py-3 text-sm text-amber-300">
+          {uploadWarning}
         </div>
       )}
 
