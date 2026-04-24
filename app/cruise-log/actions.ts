@@ -14,7 +14,9 @@ import {
   formatMdy,
 } from "@/lib/monday-values";
 
-export async function createCruiseEntry(fd: FormData) {
+export async function createCruiseEntry(
+  fd: FormData
+): Promise<{ error: string } | undefined> {
   await requireRole(["CAPTAIN", "ADMIN"]);
 
   const date = (fd.get("date") as string) ?? "";
@@ -44,17 +46,21 @@ export async function createCruiseEntry(fd: FormData) {
 
   const itemName = date ? formatMdy(date) : "New Cruise";
 
-  await mondayQuery<{ create_item: { id: string } }>(
-    `mutation ($boardId: ID!, $groupId: String!, $name: String!, $vals: JSON) {
-       create_item(board_id: $boardId, group_id: $groupId, item_name: $name, column_values: $vals) { id }
-     }`,
-    {
-      boardId: CRUISE.boardId,
-      groupId: CRUISE.groupId,
-      name: itemName,
-      vals: JSON.stringify(columnValues),
-    }
-  );
+  try {
+    await mondayQuery<{ create_item: { id: string } }>(
+      `mutation ($boardId: ID!, $groupId: String!, $name: String!, $vals: JSON) {
+         create_item(board_id: $boardId, group_id: $groupId, item_name: $name, column_values: $vals) { id }
+       }`,
+      {
+        boardId: CRUISE.boardId,
+        groupId: CRUISE.groupId,
+        name: itemName,
+        vals: JSON.stringify(columnValues),
+      }
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to save entry. Please try again." };
+  }
 
   revalidatePath("/cruise-log");
   redirect("/cruise-log");

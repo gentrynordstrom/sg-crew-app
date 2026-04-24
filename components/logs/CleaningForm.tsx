@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createCleaningEntry } from "@/app/cleaning-log/actions";
 import { CLEANING } from "@/lib/monday-schema";
 import { TextField, SelectField, TextareaField } from "./FormField";
@@ -12,11 +14,35 @@ interface CleaningFormProps {
 }
 
 export function CleaningForm({ defaultDate, crewName }: CleaningFormProps) {
+  const router = useRouter();
+  const [formError, setFormError] = useState<string | null>(null);
+
+  async function handleSubmit(fd: FormData) {
+    setFormError(null);
+    try {
+      const result = await createCleaningEntry(fd);
+      if (result?.error) {
+        setFormError(result.error);
+        return;
+      }
+      router.push("/cleaning-log");
+      router.refresh();
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+    }
+  }
+
   return (
-    <form action={createCleaningEntry} className="space-y-5">
+    <form action={handleSubmit} className="space-y-5">
       <div className="rounded-xl bg-brand-moss-800/40 px-4 py-3 text-sm text-brand-cream-400">
         Crew member: <span className="font-semibold text-brand-cream-200">{crewName}</span>
       </div>
+
+      {formError && (
+        <div className="rounded-xl border border-red-700/40 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+          {formError}
+        </div>
+      )}
 
       <TextField
         name="date"

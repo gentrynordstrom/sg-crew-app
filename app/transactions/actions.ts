@@ -15,7 +15,9 @@ import {
   formatMdy,
 } from "@/lib/monday-values";
 
-export async function createTransactionEntry(fd: FormData) {
+export async function createTransactionEntry(
+  fd: FormData
+): Promise<{ error: string } | undefined> {
   await requireRole(["CAPTAIN", "DECKHAND", "MECHANIC", "HOSPITALITY", "ADMIN"]);
 
   const date = (fd.get("date") as string) ?? "";
@@ -43,24 +45,28 @@ export async function createTransactionEntry(fd: FormData) {
     [TRANSACTIONS.columns.notes.id]: notes ? longTextValue(notes) : undefined,
   });
 
-  const result = await mondayQuery<{ create_item: { id: string } }>(
-    `mutation ($boardId: ID!, $groupId: String!, $name: String!, $vals: JSON) {
-       create_item(board_id: $boardId, group_id: $groupId, item_name: $name, column_values: $vals) { id }
-     }`,
-    {
-      boardId: TRANSACTIONS.boardId,
-      groupId: TRANSACTIONS.groupId,
-      name: itemName,
-      vals: JSON.stringify(columnValues),
-    }
-  );
-
-  const newItemId = result.create_item.id;
+  let newItemId: string;
+  try {
+    const result = await mondayQuery<{ create_item: { id: string } }>(
+      `mutation ($boardId: ID!, $groupId: String!, $name: String!, $vals: JSON) {
+         create_item(board_id: $boardId, group_id: $groupId, item_name: $name, column_values: $vals) { id }
+       }`,
+      {
+        boardId: TRANSACTIONS.boardId,
+        groupId: TRANSACTIONS.groupId,
+        name: itemName,
+        vals: JSON.stringify(columnValues),
+      }
+    );
+    newItemId = result.create_item.id;
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to save entry. Please try again." };
+  }
 
   const receipts = fd.getAll("receipts") as File[];
   for (const receipt of receipts) {
     if (receipt.size > 0) {
-      await mondayUploadFile(newItemId, TRANSACTIONS.columns.receipts.id, receipt);
+      try { await mondayUploadFile(newItemId, TRANSACTIONS.columns.receipts.id, receipt); } catch { /* non-fatal */ }
     }
   }
 

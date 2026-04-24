@@ -13,7 +13,9 @@ import {
   formatMdy,
 } from "@/lib/monday-values";
 
-export async function createCleaningEntry(fd: FormData) {
+export async function createCleaningEntry(
+  fd: FormData
+): Promise<{ error: string } | undefined> {
   const user = await requireRole(["CAPTAIN", "DECKHAND", "ADMIN"]);
 
   const date = (fd.get("date") as string) ?? "";
@@ -33,25 +35,33 @@ export async function createCleaningEntry(fd: FormData) {
     ? `${formatMdy(date)} - ${user.name}`
     : `Cleaning - ${user.name}`;
 
-  const result = await mondayQuery<{ create_item: { id: string } }>(
-    `mutation ($boardId: ID!, $groupId: String!, $name: String!, $vals: JSON) {
-       create_item(board_id: $boardId, group_id: $groupId, item_name: $name, column_values: $vals) { id }
-     }`,
-    {
-      boardId: CLEANING.boardId,
-      groupId: CLEANING.groupId,
-      name: itemName,
-      vals: JSON.stringify(columnValues),
-    }
-  );
+  let newItemId: string;
+  try {
+    const result = await mondayQuery<{ create_item: { id: string } }>(
+      `mutation ($boardId: ID!, $groupId: String!, $name: String!, $vals: JSON) {
+         create_item(board_id: $boardId, group_id: $groupId, item_name: $name, column_values: $vals) { id }
+       }`,
+      {
+        boardId: CLEANING.boardId,
+        groupId: CLEANING.groupId,
+        name: itemName,
+        vals: JSON.stringify(columnValues),
+      }
+    );
+    newItemId = result.create_item.id;
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to save entry. Please try again." };
+  }
 
-  const newItemId = result.create_item.id;
-
-  // Upload after-pictures if provided
+  // Upload after-pictures if provided (best-effort; don't fail the whole entry)
   const photos = fd.getAll("photos") as File[];
   for (const photo of photos) {
     if (photo.size > 0) {
-      await mondayUploadFile(newItemId, CLEANING.columns.afterPictures.id, photo);
+      try {
+        await mondayUploadFile(newItemId, CLEANING.columns.afterPictures.id, photo);
+      } catch {
+        // photo upload failure is non-fatal
+      }
     }
   }
 

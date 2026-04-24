@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createTransactionEntry } from "@/app/transactions/actions";
 import { TRANSACTIONS } from "@/lib/monday-schema";
 import { TextField, SelectField, TextareaField } from "./FormField";
@@ -12,8 +14,28 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({ defaultDate, defaultPerson }: TransactionFormProps) {
+  const router = useRouter();
+  const [formError, setFormError] = useState<string | null>(null);
+
+  async function handleSubmit(fd: FormData) {
+    setFormError(null);
+    try {
+      const result = await createTransactionEntry(fd);
+      if (result?.error) { setFormError(result.error); return; }
+      router.push("/transactions");
+      router.refresh();
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+    }
+  }
+
   return (
-    <form action={createTransactionEntry} className="space-y-5">
+    <form action={handleSubmit} className="space-y-5">
+      {formError && (
+        <div className="rounded-xl border border-red-700/40 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+          {formError}
+        </div>
+      )}
       <TextField
         name="date"
         label="Date"
