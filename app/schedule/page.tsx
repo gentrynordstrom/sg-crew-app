@@ -10,6 +10,7 @@ import {
   formatWeekDayLabel,
   todayYmd,
 } from "@/lib/schedule";
+import { ROLE_LABELS } from "@/lib/roles";
 import { startOfPayrollDay, endOfPayrollDay } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function SchedulePage() {
     "DECKHAND",
     "MECHANIC",
     "HOSPITALITY",
+    "NARRATOR",
     "ADMIN",
   ]);
 
@@ -142,9 +144,20 @@ export default async function SchedulePage() {
                             <div>
                               <p className="font-semibold">{ev.title}</p>
                               <p className="mt-0.5 text-sm opacity-80">
-                                {formatEventTime(ev.startTime)} –{" "}
-                                {formatEventTime(ev.endTime)}
+                                {formatEventTime(s.shiftStart ?? ev.startTime)} –{" "}
+                                {formatEventTime(s.shiftEnd ?? ev.endTime)}
                               </p>
+                              {s.shiftStart &&
+                                s.shiftStart.getTime() !== ev.startTime.getTime() && (
+                                  <p className="mt-0.5 text-xs opacity-60">
+                                    Event departs at {formatEventTime(ev.startTime)}
+                                  </p>
+                                )}
+                              {s.roleForShift && s.roleForShift !== s.user.role && (
+                                <p className="mt-1 text-xs font-medium opacity-80">
+                                  Working as: {ROLE_LABELS[s.roleForShift]}
+                                </p>
+                              )}
                             </div>
                             <div className="flex flex-col items-end gap-1">
                               <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs font-medium">

@@ -15,6 +15,7 @@ import {
   EVENT_TYPE_COLORS,
   toTimeInputValue,
   todayYmd,
+  combineDateAndTime,
 } from "@/lib/schedule";
 import { ROLE_LABELS, ROLE_BADGE_CLASSES } from "@/lib/roles";
 import {
@@ -22,14 +23,17 @@ import {
   updateEvent,
   deleteEvent,
   setEventCrew,
+  type CrewAssignment,
 } from "@/app/admin/schedule/actions";
 
 const EVENT_TYPES = Object.keys(EVENT_TYPE_LABELS) as ScheduledEventType[];
 
 type UserOption = Pick<User, "id" | "name" | "role">;
 
+type ShiftWithTimes = ScheduledShift & { user: UserOption };
+
 type ExistingEvent = ScheduledEvent & {
-  shifts: (ScheduledShift & { user: UserOption })[];
+  shifts: ShiftWithTimes[];
 };
 
 interface EventFormProps {
@@ -39,17 +43,24 @@ interface EventFormProps {
   defaultDate?: string;
 }
 
+interface CrewTime {
+  shiftStart: string; // HH:MM
+  shiftEnd: string;   // HH:MM
+}
+
 const INPUT_CLASS =
   "w-full rounded-xl bg-brand-moss-800/60 px-4 py-3 text-brand-cream-100 placeholder-brand-cream-600 ring-1 ring-brand-cream-900/40 focus:outline-none focus:ring-2 focus:ring-brand-brass-400 min-h-[48px] appearance-none";
 const LABEL_CLASS =
   "mb-1.5 block text-sm font-medium text-brand-cream-300";
+const TIME_INPUT_CLASS =
+  "w-full rounded-lg bg-brand-moss-900/60 px-3 py-2 text-sm text-brand-cream-100 ring-1 ring-brand-cream-900/40 focus:outline-none focus:ring-2 focus:ring-brand-brass-400 appearance-none";
 
-// Group users by role for display
 const ROLE_ORDER: Role[] = [
   "CAPTAIN",
   "DECKHAND",
   "MECHANIC",
   "HOSPITALITY",
+  "NARRATOR",
   "ADMIN",
 ];
 
@@ -63,17 +74,73 @@ export function EventForm({
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
 
-  const initialAssigned = new Set(
-    event?.shifts.map((s) => s.userId) ?? []
-  );
+  // Track the event-level times so we can pre-fill new crew assignments
+  const defaultEventStart = event?.startTime
+    ? toTimeInputValue(event.startTime)
+    : "09:00";
+  const defaultEventEnd = event?.endTime
+    ? toTimeInputValue(event.endTime)
+    : "17:00";
+  const [eventStart, setEventStart] = useState(defaultEventStart);
+  const [eventEnd, setEventEnd] = useState(defaultEventEnd);
+
+  const initialAssigned = new Set(event?.shifts.map((s) => s.userId) ?? []);
+
+  // Build initial crewTimes from existing shift overrides
+  const initialCrewTimes = new Map<string, CrewTime>();
+  const initialCrewRoles = new Map<string, Role>();
+  for (const s of event?.shifts ?? []) {
+    initialCrewTimes.set(s.userId, {
+      shiftStart: s.shiftStart ? toTimeInputValue(s.shiftStart) : defaultEventStart,
+      shiftEnd: s.shiftEnd ? toTimeInputValue(s.shiftEnd) : defaultEventEnd,
+    });
+    if (s.roleForShift) {
+      initialCrewRoles.set(s.userId, s.roleForShift);
+    }
+  }
+
   const [assigned, setAssigned] = useState<Set<string>>(initialAssigned);
+  const [crewTimes, setCrewTimes] = useState<Map<string, CrewTime>>(initialCrewTimes);
+  const [crewRoles, setCrewRoles] = useState<Map<string, Role>>(initialCrewRoles);
 
   function toggleUser(userId: string) {
     setAssigned((prev) => {
       const next = new Set(prev);
-      if (next.has(userId)) next.delete(userId);
-      else next.add(userId);
+      if (next.has(userId)) {
+        next.delete(userId);
+        setCrewTimes((ct) => {
+          const m = new Map(ct);
+          m.delete(userId);
+          return m;
+        });
+        setCrewRoles((cr) => {
+          const m = new Map(cr);
+          m.delete(userId);
+          return m;
+        });
+      } else {
+        next.add(userId);
+        setCrewTimes((ct) => {
+          if (ct.has(userId)) return ct;
+          const m = new Map(ct);
+          m.set(userId, { shiftStart: eventStart, shiftEnd: eventEnd });
+          return m;
+        });
+      }
       return next;
+    });
+  }
+
+  function updateCrewTime(
+    userId: string,
+    field: "shiftStart" | "shiftEnd",
+    value: string
+  ) {
+    setCrewTimes((prev) => {
+      const m = new Map(prev);
+      const existing = m.get(userId) ?? { shiftStart: eventStart, shiftEnd: eventEnd };
+      m.set(userId, { ...existing, [field]: value });
+      return m;
     });
   }
 
@@ -90,8 +157,40 @@ export function EventForm({
         return;
       }
 
-      // Save crew assignments
-      await setEventCrew(result.eventId, Array.from(assigned));
+      const dateStr = fd.get("date") as string;
+
+      const eventStartDate = combineDateAndTime(dateStr, eventStart);
+      const eventEndDate = combineDateAndTime(dateStr, eventEnd);
+
+      // Look up each user's primary role to determine if roleForShift is actually an override
+      const userMap = new Map(allUsers.map((u) => [u.id, u]));
+
+      const crewAssignments: CrewAssignment[] = Array.from(assigned).map(
+        (userId) => {
+          const times = crewTimes.get(userId);
+          const shiftStart = times
+            ? combineDateAndTime(dateStr, times.shiftStart)
+            : eventStartDate;
+          const shiftEnd = times
+            ? combineDateAndTime(dateStr, times.shiftEnd)
+            : eventEndDate;
+
+          const roleOverride = crewRoles.get(userId) ?? null;
+          const primaryRole = userMap.get(userId)?.role ?? null;
+
+          return {
+            userId,
+            shiftStart:
+              shiftStart.getTime() !== eventStartDate.getTime() ? shiftStart : null,
+            shiftEnd:
+              shiftEnd.getTime() !== eventEndDate.getTime() ? shiftEnd : null,
+            // Only persist if it actually differs from the user's primary role
+            roleForShift: roleOverride !== primaryRole ? roleOverride : null,
+          };
+        }
+      );
+
+      await setEventCrew(result.eventId, crewAssignments);
       router.push(`/admin/schedule/${result.eventId}`);
     });
   }
@@ -116,6 +215,11 @@ export function EventForm({
     role,
     users: allUsers.filter((u) => u.role === role),
   })).filter((g) => g.users.length > 0);
+
+  // Ordered list of assigned users for the time-override section
+  const assignedUsers = ROLE_ORDER.flatMap((role) =>
+    allUsers.filter((u) => u.role === role && assigned.has(u.id))
+  );
 
   return (
     <form action={handleSubmit} className="space-y-5">
@@ -188,9 +292,8 @@ export function EventForm({
             name="startTime"
             type="time"
             required
-            defaultValue={
-              event?.startTime ? toTimeInputValue(event.startTime) : "09:00"
-            }
+            value={eventStart}
+            onChange={(e) => setEventStart(e.target.value)}
             className={INPUT_CLASS}
           />
         </div>
@@ -203,9 +306,8 @@ export function EventForm({
             name="endTime"
             type="time"
             required
-            defaultValue={
-              event?.endTime ? toTimeInputValue(event.endTime) : "17:00"
-            }
+            value={eventEnd}
+            onChange={(e) => setEventEnd(e.target.value)}
             className={INPUT_CLASS}
           />
         </div>
@@ -280,6 +382,123 @@ export function EventForm({
           ))}
         </div>
       </div>
+
+      {/* ── Per-crew shift times ─────────────────────────────────────── */}
+      {assignedUsers.length > 0 && (
+        <div>
+          <p className="mb-2 text-sm font-medium text-brand-cream-300">
+            Assigned crew times
+            <span className="ml-2 text-xs font-normal text-brand-cream-500">
+              Override per person — defaults to event times
+            </span>
+          </p>
+          <div className="space-y-2 rounded-xl bg-brand-moss-800/40 p-4 ring-1 ring-brand-cream-900/30">
+            {assignedUsers.map((u) => {
+              const times = crewTimes.get(u.id) ?? {
+                shiftStart: eventStart,
+                shiftEnd: eventEnd,
+              };
+              const isCustomStart = times.shiftStart !== eventStart;
+              const isCustomEnd = times.shiftEnd !== eventEnd;
+              const effectiveRole = crewRoles.get(u.id) ?? u.role;
+              const isCustomRole = effectiveRole !== u.role;
+              return (
+                <div key={u.id} className="rounded-lg bg-brand-moss-900/40 p-3 space-y-2">
+                  {/* Name + role row */}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <span className="text-sm font-medium text-brand-cream-200">
+                        {u.name}
+                      </span>
+                      <span className="ml-2 text-xs text-brand-cream-500">
+                        (primary: {ROLE_LABELS[u.role as Role]})
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-start gap-0.5">
+                      <label className="text-[10px] font-medium uppercase tracking-wider text-brand-cream-500">
+                        Working as
+                      </label>
+                      <select
+                        value={effectiveRole}
+                        onChange={(e) => {
+                          const val = e.target.value as Role;
+                          setCrewRoles((prev) => {
+                            const m = new Map(prev);
+                            if (val === u.role) m.delete(u.id);
+                            else m.set(u.id, val);
+                            return m;
+                          });
+                        }}
+                        className={`rounded-lg bg-brand-moss-800/80 px-2 py-1.5 text-sm ring-1 focus:outline-none focus:ring-2 focus:ring-brand-brass-400 appearance-none ${
+                          isCustomRole
+                            ? "ring-brand-brass-400/60 text-brand-brass-200"
+                            : "ring-brand-cream-900/40 text-brand-cream-100"
+                        }`}
+                      >
+                        {ROLE_ORDER.map((r) => (
+                          <option key={r} value={r}>
+                            {ROLE_LABELS[r]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Time inputs row */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex flex-col items-start gap-0.5">
+                      <label className="text-[10px] font-medium uppercase tracking-wider text-brand-cream-500">
+                        Start
+                      </label>
+                      <input
+                        type="time"
+                        value={times.shiftStart}
+                        onChange={(e) =>
+                          updateCrewTime(u.id, "shiftStart", e.target.value)
+                        }
+                        className={`${TIME_INPUT_CLASS} ${isCustomStart ? "ring-brand-brass-400/60 text-brand-brass-200" : ""}`}
+                      />
+                    </div>
+                    <span className="mt-4 text-brand-cream-500">–</span>
+                    <div className="flex flex-col items-start gap-0.5">
+                      <label className="text-[10px] font-medium uppercase tracking-wider text-brand-cream-500">
+                        End
+                      </label>
+                      <input
+                        type="time"
+                        value={times.shiftEnd}
+                        onChange={(e) =>
+                          updateCrewTime(u.id, "shiftEnd", e.target.value)
+                        }
+                        className={`${TIME_INPUT_CLASS} ${isCustomEnd ? "ring-brand-brass-400/60 text-brand-brass-200" : ""}`}
+                      />
+                    </div>
+                    {(isCustomStart || isCustomEnd) && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCrewTimes((prev) => {
+                            const m = new Map(prev);
+                            m.set(u.id, {
+                              shiftStart: eventStart,
+                              shiftEnd: eventEnd,
+                            });
+                            return m;
+                          })
+                        }
+                        className="mt-4 text-xs text-brand-cream-500 hover:text-brand-cream-300"
+                        title="Reset to event times"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Actions ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-3 pt-2">

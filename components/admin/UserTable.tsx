@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import type { User } from "@prisma/client";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserForm } from "./UserForm";
@@ -30,6 +30,13 @@ export function UserTable({
     text: string;
   } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const editPanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (editingId && editPanelRef.current) {
+      editPanelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [editingId]);
 
   function runAction(
     fn: (fd: FormData) => Promise<ActionResult>,
@@ -170,10 +177,25 @@ export function UserTable({
       </div>
 
       {editingId && (
-        <div className="mt-6 rounded-2xl border border-brand-moss-500/40 bg-brand-moss-800/60 p-5">
-          <h3 className="mb-4 text-lg font-semibold text-brand-cream-100">
-            Edit user
-          </h3>
+        <div
+          ref={editPanelRef}
+          className="mt-6 rounded-2xl border border-brand-brass-400/30 bg-brand-moss-800/60 p-5 ring-1 ring-brand-brass-400/20"
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-brand-cream-100">
+              Edit user —{" "}
+              <span className="text-brand-brass-300">
+                {users.find((u) => u.id === editingId)?.name}
+              </span>
+            </h3>
+            <button
+              type="button"
+              onClick={() => setEditingId(null)}
+              className="text-sm text-brand-cream-500 hover:text-brand-cream-300"
+            >
+              ✕ Close
+            </button>
+          </div>
           <UserForm
             mode="edit"
             user={users.find((u) => u.id === editingId)}

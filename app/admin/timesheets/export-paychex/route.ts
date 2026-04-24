@@ -25,12 +25,12 @@ export async function GET(request: NextRequest) {
   const from = isYmd(fromParam) ? fromParam : defaults.from;
   const to = isYmd(toParam) ? toParam : defaults.to;
 
+  const rangeStart = startOfPayrollDay(from);
+  const rangeEnd = endOfPayrollDay(to);
+
   const rows = await prisma.timeEntry.findMany({
     where: {
-      clockInAt: {
-        gte: startOfPayrollDay(from),
-        lte: endOfPayrollDay(to),
-      },
+      clockInAt: { gte: rangeStart, lte: rangeEnd },
       clockOutAt: { not: null },
     },
     orderBy: [{ user: { name: "asc" } }, { clockInAt: "asc" }],
@@ -39,7 +39,40 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const csv = buildPaychexCsv(rows);
+  // Fetch any roleForShift overrides for the same date range and users
+  const userIds = [...new Set(rows.map((r) => r.userId))];
+  const shiftOverrides = userIds.length > 0
+    ? await prisma.scheduledShift.findMany({
+        where: {
+          userId: { in: userIds },
+          roleForShift: { not: null },
+          event: { date: { gte: rangeStart, lte: rangeEnd } },
+        },
+        select: {
+          userId: true,
+          roleForShift: true,
+          event: { select: { date: true } },
+        },
+      })
+    : [];
+
+  // Build lookup: "userId:YYYY-MM-DD" -> roleForShift
+  const roleOverrideMap = new Map<string, (typeof shiftOverrides)[number]["roleForShift"]>();
+  for (const s of shiftOverrides) {
+    if (!s.roleForShift) continue;
+    const ymd = s.event.date.toISOString().slice(0, 10);
+    roleOverrideMap.set(`${s.userId}:${ymd}`, s.roleForShift);
+  }
+
+  const enrichedRows = rows.map((r) => {
+    const ymd = r.clockInAt.toISOString().slice(0, 10);
+    return {
+      ...r,
+      effectiveRole: roleOverrideMap.get(`${r.userId}:${ymd}`) ?? null,
+    };
+  });
+
+  const csv = buildPaychexCsv(enrichedRows);
   const filename = `paychex_${from}_to_${to}.csv`;
 
   return new NextResponse(csv, {

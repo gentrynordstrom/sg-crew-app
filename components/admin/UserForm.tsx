@@ -19,6 +19,7 @@ const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "DECKHAND", label: "Deckhand" },
   { value: "MECHANIC", label: "Mechanic" },
   { value: "HOSPITALITY", label: "Hospitality" },
+  { value: "NARRATOR", label: "Narrator" },
   { value: "ADMIN", label: "Admin" },
 ];
 

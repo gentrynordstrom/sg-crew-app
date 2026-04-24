@@ -13,6 +13,7 @@ enum Role {
   DECKHAND
   MECHANIC
   HOSPITALITY
+  NARRATOR
   ADMIN
 }
 
@@ -139,14 +140,20 @@ model ScheduledEvent {
 }
 
 // Assigns one crew member to one ScheduledEvent.
+// shiftStart/shiftEnd override the event's times for this person.
+// roleForShift overrides the user's primary role for this shift (pay rate, display).
+// When null, the event's times / user's primary role are used instead.
 model ScheduledShift {
-  id        String         @id @default(cuid())
-  eventId   String         @map("event_id")
-  event     ScheduledEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  userId    String         @map("user_id")
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  note      String?
-  createdAt DateTime       @default(now()) @map("created_at")
+  id           String         @id @default(cuid())
+  eventId      String         @map("event_id")
+  event        ScheduledEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId       String         @map("user_id")
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shiftStart   DateTime?      @map("shift_start")
+  shiftEnd     DateTime?      @map("shift_end")
+  roleForShift Role?          @map("role_for_shift")
+  note         String?
+  createdAt    DateTime       @default(now()) @map("created_at")
 
   @@unique([eventId, userId])
   @@index([userId])

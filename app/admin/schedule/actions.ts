@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { ScheduledEventType, ScheduledEventStatus } from "@prisma/client";
+import type { ScheduledEventType, ScheduledEventStatus, Role } from "@prisma/client";
 import { combineDateAndTime } from "@/lib/schedule";
 
 export type ScheduleActionResult =
@@ -104,22 +104,36 @@ export async function deleteEvent(
 
 // ─── Crew assignment ──────────────────────────────────────────────────────────
 
+export interface CrewAssignment {
+  userId: string;
+  shiftStart?: Date | null;
+  shiftEnd?: Date | null;
+  roleForShift?: Role | null;
+}
+
 /**
- * Replace all crew assignments for an event with the provided userIds.
+ * Replace all crew assignments for an event with the provided assignments.
+ * Each assignment may carry optional shiftStart/shiftEnd overrides; when null
+ * the crew member's schedule falls back to the event's times.
  * Accepts an empty array to remove everyone.
  */
 export async function setEventCrew(
   eventId: string,
-  userIds: string[]
+  crewAssignments: CrewAssignment[]
 ): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin();
 
-  // Remove all existing assignments then insert the new ones
   await prisma.scheduledShift.deleteMany({ where: { eventId } });
 
-  if (userIds.length > 0) {
+  if (crewAssignments.length > 0) {
     await prisma.scheduledShift.createMany({
-      data: userIds.map((userId) => ({ eventId, userId })),
+      data: crewAssignments.map(({ userId, shiftStart, shiftEnd, roleForShift }) => ({
+        eventId,
+        userId,
+        shiftStart: shiftStart ?? null,
+        shiftEnd: shiftEnd ?? null,
+        roleForShift: roleForShift ?? null,
+      })),
       skipDuplicates: true,
     });
   }

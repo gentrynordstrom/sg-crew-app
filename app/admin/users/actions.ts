@@ -12,6 +12,7 @@ const VALID_ROLES: Role[] = [
   "DECKHAND",
   "MECHANIC",
   "HOSPITALITY",
+  "NARRATOR",
   "ADMIN",
 ];
 

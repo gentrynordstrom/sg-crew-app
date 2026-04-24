@@ -295,11 +295,16 @@ function csvEscape(v: string | number): string {
 
 export interface PaychexCsvRowEntry extends TimeEntry {
   user: Pick<User, "name" | "phone" | "role"> & { paychexId?: string | null };
+  /** Role override for this specific entry — from ScheduledShift.roleForShift */
+  effectiveRole?: Role | null;
 }
 
 /**
  * Paychex Flex-compatible CSV for manual import.
- * Format: Employee ID, Last Name, First Name, Work Date, Pay Code, Hours
+ * Format: Employee ID, Last Name, First Name, Work Date, Department, Pay Code, Hours
+ *
+ * Department reflects the role the crew member actually worked (may differ from
+ * their primary role when scheduled with a roleForShift override).
  *
  * Splits each week individually to detect overtime (> 40 hrs/week).
  * Pay Code: REG = regular, OT = overtime hours beyond 40 in the work week.
@@ -310,6 +315,7 @@ export function buildPaychexCsv(rows: PaychexCsvRowEntry[]): string {
     "Last Name",
     "First Name",
     "Work Date",
+    "Department",
     "Pay Code",
     "Hours",
   ];
@@ -335,6 +341,7 @@ export function buildPaychexCsv(rows: PaychexCsvRowEntry[]): string {
     const lastName = nameparts.length > 1 ? nameparts[nameparts.length - 1] : "";
     const employeeId = r.user.paychexId?.trim() || r.userId;
     const workDate = ymdInPayrollTz(r.clockInAt);
+    const department = (r.effectiveRole ?? r.user.role) as string;
 
     // ISO week key for OT tracking
     const weekKey = `${r.userId}:${isoWeekKey(r.clockInAt)}`;
@@ -361,14 +368,14 @@ export function buildPaychexCsv(rows: PaychexCsvRowEntry[]): string {
 
     if (regMins > 0) {
       lines.push(
-        [employeeId, lastName, firstName, workDate, "REG",
+        [employeeId, lastName, firstName, workDate, department, "REG",
           minutesToHoursDecimal(regMins).toFixed(2)]
           .map(csvEscape).join(",")
       );
     }
     if (otMins > 0) {
       lines.push(
-        [employeeId, lastName, firstName, workDate, "OT",
+        [employeeId, lastName, firstName, workDate, department, "OT",
           minutesToHoursDecimal(otMins).toFixed(2)]
           .map(csvEscape).join(",")
       );

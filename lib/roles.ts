@@ -5,6 +5,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   DECKHAND: "Deckhand",
   MECHANIC: "Mechanic",
   HOSPITALITY: "Hospitality",
+  NARRATOR: "Narrator",
   ADMIN: "Admin",
 };
 
@@ -21,6 +22,8 @@ export const ROLE_BADGE_CLASSES: Record<Role, string> = {
     "bg-amber-900/50 text-amber-100 ring-amber-300/40",
   HOSPITALITY:
     "bg-rose-900/50 text-rose-100 ring-rose-300/40",
+  NARRATOR:
+    "bg-violet-900/50 text-violet-100 ring-violet-300/40",
   ADMIN:
     "bg-brand-brass-700/50 text-brand-brass-100 ring-brand-brass-300/40",
 };
@@ -137,6 +140,12 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
   MECHANIC: [
     "maintenance-log",
     "transactions",
+    "time-tracking",
+    "schedule",
+    "sops",
+    "chatbot",
+  ],
+  NARRATOR: [
     "time-tracking",
     "schedule",
     "sops",
