@@ -153,3 +153,66 @@ export function todayYmd(): string {
     timeZone: PAYROLL_TIMEZONE,
   }).format(new Date());
 }
+
+/**
+ * Returns YYYY-MM-DD for the first day of the month containing `date`.
+ */
+export function firstOfMonth(date: Date): string {
+  const dtf = new Intl.DateTimeFormat("en-CA", {
+    timeZone: PAYROLL_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = dtf.formatToParts(date);
+  const y = parts.find((p) => p.type === "year")!.value;
+  const m = parts.find((p) => p.type === "month")!.value;
+  return `${y}-${m}-01`;
+}
+
+/**
+ * Given a YYYY-MM-01 string, add `n` months (positive or negative).
+ */
+export function offsetMonth(ymd: string, n: number): string {
+  const [y, m] = ymd.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + n, 1));
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * "April 2026" display label for a month.
+ */
+export function monthLabel(firstYmd: string): string {
+  const [y, m] = firstYmd.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, 1));
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+/**
+ * Returns the full calendar grid for the month starting at `firstYmd`.
+ * Always starts on Sunday; pads to complete 6 rows (42 cells).
+ * Returns YYYY-MM-DD strings; days outside the month are included for grid padding.
+ */
+export function monthGridDays(firstYmd: string): string[] {
+  const [y, m] = firstYmd.split("-").map(Number);
+  const first = new Date(Date.UTC(y, m - 1, 1));
+  // 0=Sun…6=Sat — shift grid to start on Sunday
+  const startPad = first.getUTCDay();
+  const gridStart = new Date(first.getTime() - startPad * 86400000);
+  return Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(gridStart.getTime() + i * 86400000);
+    return d.toISOString().slice(0, 10);
+  });
+}
+
+/**
+ * Number of days in a given month.
+ */
+export function daysInMonth(firstYmd: string): number {
+  const [y, m] = firstYmd.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
