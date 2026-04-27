@@ -48,6 +48,39 @@ export interface StarboardMetadata {
   last_synced_at: string
 }
 
+// Starboard HTML-encodes certain characters in JSON string values.
+// Decode the common ones so titles/names display cleanly.
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2019;/g, '\u2019')
+    .replace(/&#8217;/g, '\u2019')
+    .replace(/\u00e2\u0080\u0099/g, "'") // UTF-8 curly apostrophe misread as latin-1
+}
+
+function decodeEvent(evt: StarboardEvent): StarboardEvent {
+  return {
+    ...evt,
+    public_notes: decodeHtmlEntities(evt.public_notes ?? ''),
+    departure_location_name: decodeHtmlEntities(evt.departure_location_name ?? ''),
+    departure_location_address: decodeHtmlEntities(evt.departure_location_address ?? ''),
+  }
+}
+
+function decodeEventType(t: StarboardEventType): StarboardEventType {
+  return {
+    ...t,
+    name: decodeHtmlEntities(t.name ?? ''),
+    description: decodeHtmlEntities(t.description ?? ''),
+  }
+}
+
 const headers = () => ({
   'Authorization': `Bearer ${STARBOARD_TOKEN}`,
   'Content-Type': 'application/vnd.api+json',
@@ -73,7 +106,7 @@ export async function fetchPublicEvents(
   }
 
   const json: StarboardResponse<StarboardEvent> = await res.json()
-  return json.data
+  return json.data.map(decodeEvent)
 }
 
 export async function fetchPublicEventTypes(
@@ -90,7 +123,7 @@ export async function fetchPublicEventTypes(
   }
 
   const json: StarboardResponse<StarboardEventType> = await res.json()
-  return json.data
+  return json.data.map(decodeEventType)
 }
 
 // Cache event types in memory for the duration of a single import run
