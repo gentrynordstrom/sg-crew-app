@@ -52,16 +52,23 @@ export interface StarboardMetadata {
 // Decode the common ones so titles/names display cleanly.
 function decodeHtmlEntities(str: string): string {
   return str
-    .replace(/&#39;/g, "'")
+    // Numeric decimal entities: &#39; &#039; &#8217; etc.
+    .replace(/&#0*39;/g, "'")
+    .replace(/&#8216;/g, '\u2018')
+    .replace(/&#8217;/g, '\u2019')
+    .replace(/&#8220;/g, '\u201C')
+    .replace(/&#8221;/g, '\u201D')
+    // Named entities
     .replace(/&apos;/g, "'")
     .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    // Hex entities
     .replace(/&#x27;/g, "'")
     .replace(/&#x2019;/g, '\u2019')
-    .replace(/&#8217;/g, '\u2019')
-    .replace(/\u00e2\u0080\u0099/g, "'") // UTF-8 curly apostrophe misread as latin-1
+    // UTF-8 curly apostrophe misread as latin-1 (3 garbage chars)
+    .replace(/\u00e2\u0080\u0099/g, "'")
 }
 
 function decodeEvent(evt: StarboardEvent): StarboardEvent {
