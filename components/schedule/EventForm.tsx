@@ -216,11 +216,6 @@ export function EventForm({
     users: allUsers.filter((u) => u.role === role),
   })).filter((g) => g.users.length > 0);
 
-  // Ordered list of assigned users for the time-override section
-  const assignedUsers = ROLE_ORDER.flatMap((role) =>
-    allUsers.filter((u) => u.role === role && assigned.has(u.id))
-  );
-
   return (
     <form action={handleSubmit} className="space-y-5">
       {mode === "edit" && event && (
@@ -359,22 +354,121 @@ export function EventForm({
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-brand-cream-500">
                 {ROLE_LABELS[role]}
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-2">
                 {users.map((u) => {
                   const on = assigned.has(u.id);
+                  const effectiveRole = crewRoles.get(u.id) ?? u.role;
+                  const isCustomRole = effectiveRole !== u.role;
+                  const times = crewTimes.get(u.id);
+                  const isCustomStart = times && times.shiftStart !== eventStart;
+                  const isCustomEnd = times && times.shiftEnd !== eventEnd;
+                  const hasOverrides = isCustomRole || isCustomStart || isCustomEnd;
+
                   return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => toggleUser(u.id)}
-                      className={`rounded-full px-3 py-1.5 text-sm font-medium ring-1 transition ${
-                        on
-                          ? "bg-brand-brass-400 text-brand-moss-800 ring-brand-brass-400"
-                          : "bg-brand-moss-700/60 text-brand-cream-300 ring-brand-cream-700/40 hover:ring-brand-brass-400/60 hover:text-brand-brass-200"
-                      }`}
-                    >
-                      {u.name}
-                    </button>
+                    <div key={u.id}>
+                      {/* Name toggle + inline role selector */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleUser(u.id)}
+                          className={`rounded-full px-3 py-1.5 text-sm font-medium ring-1 transition ${
+                            on
+                              ? "bg-brand-brass-400 text-brand-moss-800 ring-brand-brass-400"
+                              : "bg-brand-moss-700/60 text-brand-cream-300 ring-brand-cream-700/40 hover:ring-brand-brass-400/60 hover:text-brand-brass-200"
+                          }`}
+                        >
+                          {u.name}
+                        </button>
+
+                        {/* Role override — only visible when assigned */}
+                        {on && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-brand-cream-600">as</span>
+                            <select
+                              value={effectiveRole}
+                              onChange={(e) => {
+                                const val = e.target.value as Role;
+                                setCrewRoles((prev) => {
+                                  const m = new Map(prev);
+                                  if (val === u.role) m.delete(u.id);
+                                  else m.set(u.id, val);
+                                  return m;
+                                });
+                              }}
+                              className={`rounded-lg px-2 py-1 text-xs ring-1 focus:outline-none focus:ring-2 focus:ring-brand-brass-400 appearance-none ${
+                                isCustomRole
+                                  ? "bg-brand-brass-900/40 ring-brand-brass-400/60 text-brand-brass-200 font-semibold"
+                                  : "bg-brand-moss-800/80 ring-brand-cream-900/40 text-brand-cream-400"
+                              }`}
+                            >
+                              {ROLE_ORDER.map((r) => (
+                                <option key={r} value={r}>
+                                  {ROLE_LABELS[r]}
+                                </option>
+                              ))}
+                            </select>
+                            {isCustomRole && (
+                              <span className="text-[10px] text-brand-brass-400">
+                                ← override
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Per-person time overrides — collapsed by default, shown inline when assigned */}
+                      {on && times && (
+                        <div className="ml-3 mt-1.5 flex items-center gap-2 border-l-2 border-brand-cream-800/30 pl-3">
+                          <div className="flex items-center gap-1">
+                            <label className="text-[10px] text-brand-cream-600">Start</label>
+                            <input
+                              type="time"
+                              value={times.shiftStart}
+                              onChange={(e) => updateCrewTime(u.id, "shiftStart", e.target.value)}
+                              className={`rounded px-2 py-1 text-xs ring-1 focus:outline-none focus:ring-brand-brass-400 appearance-none ${
+                                isCustomStart
+                                  ? "bg-brand-brass-900/30 ring-brand-brass-400/50 text-brand-brass-200"
+                                  : "bg-brand-moss-900/40 ring-brand-cream-900/30 text-brand-cream-400"
+                              }`}
+                            />
+                          </div>
+                          <span className="text-brand-cream-700">–</span>
+                          <div className="flex items-center gap-1">
+                            <label className="text-[10px] text-brand-cream-600">End</label>
+                            <input
+                              type="time"
+                              value={times.shiftEnd}
+                              onChange={(e) => updateCrewTime(u.id, "shiftEnd", e.target.value)}
+                              className={`rounded px-2 py-1 text-xs ring-1 focus:outline-none focus:ring-brand-brass-400 appearance-none ${
+                                isCustomEnd
+                                  ? "bg-brand-brass-900/30 ring-brand-brass-400/50 text-brand-brass-200"
+                                  : "bg-brand-moss-900/40 ring-brand-cream-900/30 text-brand-cream-400"
+                              }`}
+                            />
+                          </div>
+                          {hasOverrides && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCrewTimes((prev) => {
+                                  const m = new Map(prev);
+                                  m.set(u.id, { shiftStart: eventStart, shiftEnd: eventEnd });
+                                  return m;
+                                });
+                                setCrewRoles((prev) => {
+                                  const m = new Map(prev);
+                                  m.delete(u.id);
+                                  return m;
+                                });
+                              }}
+                              className="text-[10px] text-brand-cream-600 hover:text-brand-cream-300"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -382,123 +476,6 @@ export function EventForm({
           ))}
         </div>
       </div>
-
-      {/* ── Per-crew shift times ─────────────────────────────────────── */}
-      {assignedUsers.length > 0 && (
-        <div>
-          <p className="mb-2 text-sm font-medium text-brand-cream-300">
-            Assigned crew times
-            <span className="ml-2 text-xs font-normal text-brand-cream-500">
-              Override per person — defaults to event times
-            </span>
-          </p>
-          <div className="space-y-2 rounded-xl bg-brand-moss-800/40 p-4 ring-1 ring-brand-cream-900/30">
-            {assignedUsers.map((u) => {
-              const times = crewTimes.get(u.id) ?? {
-                shiftStart: eventStart,
-                shiftEnd: eventEnd,
-              };
-              const isCustomStart = times.shiftStart !== eventStart;
-              const isCustomEnd = times.shiftEnd !== eventEnd;
-              const effectiveRole = crewRoles.get(u.id) ?? u.role;
-              const isCustomRole = effectiveRole !== u.role;
-              return (
-                <div key={u.id} className="rounded-lg bg-brand-moss-900/40 p-3 space-y-2">
-                  {/* Name + role row */}
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <span className="text-sm font-medium text-brand-cream-200">
-                        {u.name}
-                      </span>
-                      <span className="ml-2 text-xs text-brand-cream-500">
-                        (primary: {ROLE_LABELS[u.role as Role]})
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-start gap-0.5">
-                      <label className="text-[10px] font-medium uppercase tracking-wider text-brand-cream-500">
-                        Working as
-                      </label>
-                      <select
-                        value={effectiveRole}
-                        onChange={(e) => {
-                          const val = e.target.value as Role;
-                          setCrewRoles((prev) => {
-                            const m = new Map(prev);
-                            if (val === u.role) m.delete(u.id);
-                            else m.set(u.id, val);
-                            return m;
-                          });
-                        }}
-                        className={`rounded-lg bg-brand-moss-800/80 px-2 py-1.5 text-sm ring-1 focus:outline-none focus:ring-2 focus:ring-brand-brass-400 appearance-none ${
-                          isCustomRole
-                            ? "ring-brand-brass-400/60 text-brand-brass-200"
-                            : "ring-brand-cream-900/40 text-brand-cream-100"
-                        }`}
-                      >
-                        {ROLE_ORDER.map((r) => (
-                          <option key={r} value={r}>
-                            {ROLE_LABELS[r]}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Time inputs row */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex flex-col items-start gap-0.5">
-                      <label className="text-[10px] font-medium uppercase tracking-wider text-brand-cream-500">
-                        Start
-                      </label>
-                      <input
-                        type="time"
-                        value={times.shiftStart}
-                        onChange={(e) =>
-                          updateCrewTime(u.id, "shiftStart", e.target.value)
-                        }
-                        className={`${TIME_INPUT_CLASS} ${isCustomStart ? "ring-brand-brass-400/60 text-brand-brass-200" : ""}`}
-                      />
-                    </div>
-                    <span className="mt-4 text-brand-cream-500">–</span>
-                    <div className="flex flex-col items-start gap-0.5">
-                      <label className="text-[10px] font-medium uppercase tracking-wider text-brand-cream-500">
-                        End
-                      </label>
-                      <input
-                        type="time"
-                        value={times.shiftEnd}
-                        onChange={(e) =>
-                          updateCrewTime(u.id, "shiftEnd", e.target.value)
-                        }
-                        className={`${TIME_INPUT_CLASS} ${isCustomEnd ? "ring-brand-brass-400/60 text-brand-brass-200" : ""}`}
-                      />
-                    </div>
-                    {(isCustomStart || isCustomEnd) && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setCrewTimes((prev) => {
-                            const m = new Map(prev);
-                            m.set(u.id, {
-                              shiftStart: eventStart,
-                              shiftEnd: eventEnd,
-                            });
-                            return m;
-                          })
-                        }
-                        className="mt-4 text-xs text-brand-cream-500 hover:text-brand-cream-300"
-                        title="Reset to event times"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* ── Actions ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-3 pt-2">
