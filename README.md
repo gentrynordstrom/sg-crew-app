@@ -41,13 +41,20 @@ Sign in as the bootstrap admin:
 
 | Name                   | Required | Notes                                                                                          |
 | ---------------------- | :------: | ---------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | yes      | Supabase pooled connection string (`?pgbouncer=true`). Used by the app at runtime.             |
-| `DIRECT_URL`           | yes      | Supabase direct connection string. Used by `prisma db push` / migrations.                      |
-| `JWT_SECRET`           | yes      | 32+ char random string. Generate: `openssl rand -base64 48`.                                   |
-| `ADMIN_NAME`           | seed     | Bootstrap admin display name.                                                                  |
-| `ADMIN_PHONE`          | seed     | 10-digit phone. PIN derived from last 4.                                                       |
-| `ADMIN_PIN`            | no       | Optional override. Must be 4 digits.                                                           |
-| `NEXT_PUBLIC_APP_URL`  | yes      | `http://localhost:3000` locally; Vercel production URL in prod.                                |
+| `DATABASE_URL`              | yes       | Supabase pooled connection string (`?pgbouncer=true`). Used by the app at runtime.             |
+| `DIRECT_URL`                | yes       | Supabase direct connection string. Used by `prisma db push` / migrations.                      |
+| `JWT_SECRET`                | yes       | 32+ char random string. Generate: `openssl rand -base64 48`.                                   |
+| `NEXT_PUBLIC_APP_URL`       | yes       | `http://localhost:3000` locally; Vercel production URL in prod.                                |
+| `MONDAY_API_KEY`            | yes       | Monday.com API token. Used for all log entries.                                                |
+| `SUPABASE_URL`              | yes       | Supabase project URL (`https://<project>.supabase.co`). Used for file storage.                 |
+| `SUPABASE_SERVICE_ROLE_KEY` | yes       | Supabase service role key. Used server-side for storage and presigned URL generation.           |
+| `STARBOARD_API_TOKEN`       | sync only | Bearer token from Starboard Suite dashboard (1Password). Required for cruise event sync.        |
+| `STARBOARD_SUBDOMAIN`       | sync only | Your Starboard subdomain (e.g. `sg`). Determines the API base URL.                             |
+| `STARBOARD_SYNC_DAYS_AHEAD` | no        | Days ahead to sync (default: `60`). Controls the Starboard import window.                      |
+| `CRON_SECRET`               | prod      | Random secret; Vercel sends it on cron invocations. Generate: `openssl rand -base64 32`.       |
+| `ADMIN_NAME`                | seed      | Bootstrap admin display name.                                                                  |
+| `ADMIN_PHONE`                | seed      | 10-digit phone. PIN derived from last 4.                                                       |
+| `ADMIN_PIN`                 | no        | Optional override. Must be 4 digits.                                                           |
 
 `ADMIN_*` vars are only consumed by `prisma/seed.ts`. Safe to leave out of Vercel env if you never plan to reseed from prod.
 

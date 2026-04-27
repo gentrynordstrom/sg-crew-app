@@ -124,9 +124,10 @@ model ScheduledEvent {
   endTime     DateTime             @map("end_time")
   eventType   ScheduledEventType   @map("event_type")
   status      ScheduledEventStatus @default(DRAFT)
-  // Starboard Suite integration (future): store the ticketing event ID here
-  sourceId    String?              @map("source_id")
-  sourceType  String?              @map("source_type")
+  // Starboard Suite integration: store the ticketing event ID + raw metadata here
+  sourceId       String?              @map("source_id")
+  sourceType     String?              @map("source_type")
+  sourceMetadata Json?                @map("source_metadata")
   notes       String?
   createdById String               @map("created_by_id")
   createdBy   User                 @relation("EventCreator", fields: [createdById], references: [id])
@@ -134,6 +135,7 @@ model ScheduledEvent {
   createdAt   DateTime             @default(now()) @map("created_at")
   updatedAt   DateTime             @updatedAt @map("updated_at")
 
+  @@unique([sourceId, sourceType])
   @@index([date])
   @@index([status])
   @@map("scheduled_events")

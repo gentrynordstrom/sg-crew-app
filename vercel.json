@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/schedule/import-starboard",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}

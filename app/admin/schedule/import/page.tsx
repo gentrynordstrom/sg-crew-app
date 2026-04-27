@@ -1,13 +1,28 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { Logo } from "@/components/Logo";
 import { SignOutButton } from "@/components/SignOutButton";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { ImportButton } from "@/components/schedule/ImportButton";
+import type { StarboardMetadata } from "@/lib/starboard";
 
 export const dynamic = "force-dynamic";
 
 export default async function ImportCruisesPage() {
   await requireAdmin();
+
+  // Find the most recently synced event to show a "Last synced" timestamp
+  const lastSyncedEvent = await prisma.scheduledEvent.findFirst({
+    where: { sourceType: "starboard" },
+    orderBy: { updatedAt: "desc" },
+    select: { sourceMetadata: true, updatedAt: true },
+  });
+
+  const lastSyncedAt = lastSyncedEvent
+    ? (lastSyncedEvent.sourceMetadata as unknown as StarboardMetadata | null)?.last_synced_at
+      ?? lastSyncedEvent.updatedAt.toISOString()
+    : null;
 
   return (
     <main className="min-h-screen bg-brand-moss-700 px-4 py-8">
@@ -32,25 +47,36 @@ export default async function ImportCruisesPage() {
 
         <AdminNav />
 
-        {/* Status banner */}
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-brand-brass-500/40 bg-brand-brass-900/20 px-4 py-4">
-          <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-brand-brass-400" />
-          <div>
-            <p className="font-semibold text-brand-brass-200">
-              Waiting for Starboard Suite API access
-            </p>
-            <p className="mt-1 text-sm text-brand-brass-300/80">
-              API access has been requested. Once the credentials are received,
-              this page will let you pull the cruise schedule directly into the
-              app with one click.
+        {/* Last synced status */}
+        {lastSyncedAt ? (
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-900/10 px-4 py-3">
+            <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
+            <p className="text-sm text-emerald-300">
+              Last synced:{" "}
+              <span className="font-medium text-emerald-200">
+                {new Date(lastSyncedAt).toLocaleString()}
+              </span>
             </p>
           </div>
-        </div>
+        ) : (
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-brand-brass-500/40 bg-brand-brass-900/20 px-4 py-4">
+            <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-brand-brass-400" />
+            <div>
+              <p className="font-semibold text-brand-brass-200">
+                No syncs yet
+              </p>
+              <p className="mt-1 text-sm text-brand-brass-300/80">
+                Click the button below to pull cruise events from Starboard Suite
+                into the schedule as draft events.
+              </p>
+            </div>
+          </div>
+        )}
 
-        {/* How it will work */}
+        {/* How it works */}
         <div className="rounded-2xl border border-brand-moss-500/40 bg-brand-moss-800/60 p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold text-brand-cream-100">
-            How the integration will work
+            How the sync works
           </h2>
           <ol className="space-y-4 text-sm text-brand-cream-300">
             <li className="flex gap-3">
@@ -58,9 +84,8 @@ export default async function ImportCruisesPage() {
                 1
               </span>
               <span>
-                Select a date range and click <strong className="text-brand-cream-100">Import</strong>.
-                The app will query Starboard Suite for all booked events in
-                that range.
+                Click <strong className="text-brand-cream-100">Sync from Starboard Suite</strong>.
+                The app fetches all cruise events for the next 60 days.
               </span>
             </li>
             <li className="flex gap-3">
@@ -68,10 +93,9 @@ export default async function ImportCruisesPage() {
                 2
               </span>
               <span>
-                Each cruise will be created as a new <strong className="text-brand-cream-100">DRAFT</strong>{" "}
-                scheduled event with the title, date, and times pulled from
-                Starboard Suite. Duplicate events (matching <code className="text-brand-brass-200">sourceId</code>)
-                are skipped.
+                New events appear as <strong className="text-brand-cream-100">DRAFT</strong> on
+                the schedule. Existing synced events are updated (times, title) without
+                losing crew assignments.
               </span>
             </li>
             <li className="flex gap-3">
@@ -79,49 +103,30 @@ export default async function ImportCruisesPage() {
                 3
               </span>
               <span>
-                Laura assigns crew to each imported cruise in the normal
-                schedule view, then publishes the week.
+                Events cancelled in Starboard are marked{" "}
+                <strong className="text-brand-cream-100">CANCELLED</strong> here.
+                Crew assignments are preserved for payroll records.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-brass-700/50 text-xs font-bold text-brand-brass-200">
+                4
+              </span>
+              <span>
+                Assign crew to each imported cruise in the normal schedule view,
+                then publish the week.
               </span>
             </li>
           </ol>
 
-          {/* Import button — disabled until API is wired */}
           <div className="mt-6">
-            <button
-              disabled
-              className="inline-flex items-center gap-2 rounded-full bg-brand-brass-400 px-6 py-3 text-sm font-semibold text-brand-moss-800 opacity-40 cursor-not-allowed"
-              title="Starboard Suite API access pending"
-            >
-              Import cruises
-            </button>
-            <p className="mt-2 text-xs text-brand-cream-500">
-              This button will become active once{" "}
-              <code className="text-brand-cream-400">STARBOARD_API_KEY</code> is
-              set in the environment.
-            </p>
+            <ImportButton />
           </div>
-        </div>
 
-        {/* Technical notes for when API access arrives */}
-        <details className="mt-4 rounded-xl border border-brand-moss-500/30 bg-brand-moss-800/40 px-4 py-3 text-sm text-brand-cream-500">
-          <summary className="cursor-pointer font-medium text-brand-cream-400">
-            Developer notes (expand when API key arrives)
-          </summary>
-          <div className="mt-3 space-y-2 font-mono text-xs">
-            <p>// 1. Add to .env.local + Vercel env vars:</p>
-            <p className="text-brand-cream-300">STARBOARD_API_KEY=&quot;...&quot;</p>
-            <p className="mt-2">// 2. Wire the import route handler at:</p>
-            <p className="text-brand-cream-300">
-              POST /api/schedule/import-starboard
-            </p>
-            <p className="mt-2">
-              // 3. For each event from Starboard, call prisma.scheduledEvent.upsert
-            </p>
-            <p className="mt-1">
-              // &#123; where: &#123; sourceId_sourceType: &#123; sourceId, sourceType: &quot;starboard&quot; &#125; &#125;, ... &#125;
-            </p>
-          </div>
-        </details>
+          <p className="mt-3 text-xs text-brand-cream-500">
+            This sync also runs automatically every 30 minutes via a Vercel cron job.
+          </p>
+        </div>
       </div>
     </main>
   );

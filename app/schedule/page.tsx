@@ -38,7 +38,7 @@ export default async function SchedulePage() {
     where: {
       userId: user.id,
       event: {
-        status: { in: ["PUBLISHED", "DRAFT"] },
+        status: { in: ["PUBLISHED", "DRAFT", "CANCELLED"] },
         date: {
           gte: new Date(pastDate + "T00:00:00Z"),
           lte: new Date(futureDate + "T23:59:59Z"),
@@ -131,6 +131,7 @@ export default async function SchedulePage() {
                       const ev = s.event;
                       const color = EVENT_TYPE_COLORS[ev.eventType];
                       const isDraft = ev.status === "DRAFT";
+                      const isCancelled = ev.status === "CANCELLED";
                       const otherCrew = ev.shifts
                         .filter((sh) => sh.userId !== user.id)
                         .map((sh) => sh.user.name);
@@ -138,11 +139,17 @@ export default async function SchedulePage() {
                       return (
                         <div
                           key={s.id}
-                          className={`rounded-xl px-4 py-4 ring-1 ${color} ${isDraft ? "opacity-70" : ""}`}
+                          className={`rounded-xl px-4 py-4 ring-1 ${
+                            isCancelled
+                              ? "bg-gray-800/60 ring-gray-600/40 opacity-60"
+                              : `${color} ${isDraft ? "opacity-70" : ""}`
+                          }`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <p className="font-semibold">{ev.title}</p>
+                              <p className={`font-semibold ${isCancelled ? "line-through text-gray-400" : ""}`}>
+                                {ev.title}
+                              </p>
                               <p className="mt-0.5 text-sm opacity-80">
                                 {formatEventTime(s.shiftStart ?? ev.startTime)} –{" "}
                                 {formatEventTime(s.shiftEnd ?? ev.endTime)}
@@ -163,7 +170,12 @@ export default async function SchedulePage() {
                               <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs font-medium">
                                 {EVENT_TYPE_LABELS[ev.eventType]}
                               </span>
-                              {isDraft && (
+                              {isCancelled && (
+                                <span className="rounded-full bg-red-900/60 px-2 py-0.5 text-[10px] font-medium text-red-300">
+                                  Cancelled
+                                </span>
+                              )}
+                              {isDraft && !isCancelled && (
                                 <span className="rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-medium">
                                   Tentative
                                 </span>
@@ -171,13 +183,19 @@ export default async function SchedulePage() {
                             </div>
                           </div>
 
-                          {ev.notes && (
+                          {isCancelled && (
+                            <p className="mt-2 text-xs text-red-400">
+                              This shift has been cancelled. You are not expected to report.
+                            </p>
+                          )}
+
+                          {ev.notes && !isCancelled && (
                             <p className="mt-2 text-sm opacity-75">
                               {ev.notes}
                             </p>
                           )}
 
-                          {otherCrew.length > 0 && (
+                          {otherCrew.length > 0 && !isCancelled && (
                             <p className="mt-2 text-xs opacity-70">
                               With: {otherCrew.join(", ")}
                             </p>

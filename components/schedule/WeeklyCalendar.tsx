@@ -163,29 +163,39 @@ export function WeeklyCalendar({
 function EventBlock({ event }: { event: EventWithCrew }) {
   const color = EVENT_TYPE_COLORS[event.eventType as ScheduledEventType];
   const isDraft = event.status === "DRAFT";
+  const isCancelled = event.status === "CANCELLED";
 
   return (
     <Link href={`/admin/schedule/${event.id}`}>
       <div
-        className={`rounded-lg px-2 py-1.5 ring-1 transition hover:brightness-110 ${color} ${
-          isDraft ? "opacity-60" : ""
+        className={`rounded-lg px-2 py-1.5 ring-1 transition hover:brightness-110 ${
+          isCancelled
+            ? "bg-gray-800/60 ring-gray-600/40 opacity-50"
+            : `${color} ${isDraft ? "opacity-60" : ""}`
         }`}
       >
         <div className="flex items-start justify-between gap-1">
-          <p className="truncate text-xs font-semibold leading-tight">
+          <p className={`truncate text-xs font-semibold leading-tight ${isCancelled ? "line-through text-gray-400" : ""}`}>
             {event.title}
           </p>
-          {isDraft && (
-            <span className="shrink-0 rounded bg-black/20 px-1 py-0.5 text-[10px] font-medium">
-              Draft
-            </span>
-          )}
+          <div className="flex shrink-0 gap-1">
+            {isCancelled && (
+              <span className="rounded bg-red-900/60 px-1 py-0.5 text-[10px] font-medium text-red-300">
+                Cancelled
+              </span>
+            )}
+            {isDraft && !isCancelled && (
+              <span className="rounded bg-black/20 px-1 py-0.5 text-[10px] font-medium">
+                Draft
+              </span>
+            )}
+          </div>
         </div>
-        <p className="mt-0.5 text-[11px] opacity-80">
+        <p className={`mt-0.5 text-[11px] ${isCancelled ? "text-gray-500" : "opacity-80"}`}>
           {formatEventTime(event.startTime)} – {formatEventTime(event.endTime)}
         </p>
         {event.shifts.length > 0 && (
-          <p className="mt-0.5 text-[11px] opacity-70">
+          <p className={`mt-0.5 text-[11px] ${isCancelled ? "text-gray-600" : "opacity-70"}`}>
             {event.shifts.length} crew
           </p>
         )}
