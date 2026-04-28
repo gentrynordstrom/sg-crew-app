@@ -30,10 +30,13 @@ export async function POST(request: Request) {
     }
   }
 
-  const databaseId = process.env.NOTION_SOP_DATABASE_ID;
+  const databaseId = resolveNotionDatabaseId();
   if (!databaseId) {
     return NextResponse.json(
-      { error: "NOTION_SOP_DATABASE_ID is not configured" },
+      {
+        error:
+          "Notion SOP database ID is not configured. Set NOTION_SOP_DATABASE_ID (preferred) or NOTION_DATABASE_ID.",
+      },
       { status: 500 }
     );
   }
@@ -48,6 +51,26 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+function resolveNotionDatabaseId(): string | null {
+  const raw =
+    process.env.NOTION_SOP_DATABASE_ID ??
+    process.env.NOTION_DATABASE_ID ??
+    null;
+  if (!raw) return null;
+
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  // Support pasting either the raw 32-char ID or a full Notion URL.
+  const cleaned = trimmed.replace(/-/g, "");
+  if (/^[0-9a-f]{32}$/i.test(cleaned)) return cleaned.toLowerCase();
+
+  const urlMatch = trimmed.match(/\/([0-9a-f]{32})(?:\?|$)/i);
+  if (urlMatch?.[1]) return urlMatch[1].toLowerCase();
+
+  return null;
 }
 
 async function runSync(databaseId: string): Promise<SyncResult> {
