@@ -19,7 +19,7 @@ export default async function SopDetailPage({
     where: {
       slug: params.slug,
       status: "ACTIVE",
-      roleAccess: { some: { role: user.role } },
+      OR: [{ roleAccess: { some: { role: user.role } } }, { roleAccess: { none: {} } }],
     },
     include: {
       blocks: {

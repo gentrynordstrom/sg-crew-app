@@ -34,8 +34,10 @@ interface HomeGroupsProps {
 }
 
 export function HomeGroups({ groups }: HomeGroupsProps) {
-  // All groups start open
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // All groups start collapsed
+  const [collapsed, setCollapsed] = useState<Set<string>>(
+    () => new Set(groups.map((g) => g.group))
+  );
 
   function toggle(group: string) {
     setCollapsed((prev) => {

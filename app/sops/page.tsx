@@ -17,12 +17,16 @@ export default async function SopsPage({
   const docs = await prisma.sopDocument.findMany({
     where: {
       status: "ACTIVE",
-      roleAccess: { some: { role: user.role } },
+      OR: [{ roleAccess: { some: { role: user.role } } }, { roleAccess: { none: {} } }],
       ...(q
         ? {
-            OR: [
-              { title: { contains: q, mode: "insensitive" } },
-              { summary: { contains: q, mode: "insensitive" } },
+            AND: [
+              {
+                OR: [
+                  { title: { contains: q, mode: "insensitive" as const } },
+                  { summary: { contains: q, mode: "insensitive" as const } },
+                ],
+              },
             ],
           }
         : {}),
