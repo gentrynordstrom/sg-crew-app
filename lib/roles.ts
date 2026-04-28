@@ -118,7 +118,7 @@ const ALL_TILES: TileDef[] = [
     feature: "sops",
     label: "SOPs",
     description: "Standard operating procedures.",
-    href: "/coming-soon",
+    href: "/sops",
     group: "resources",
   },
   {

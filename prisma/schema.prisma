@@ -37,6 +37,11 @@ enum ScheduledEventStatus {
   CANCELLED
 }
 
+enum SopDocumentStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 model User {
   id              String    @id @default(cuid())
   name            String
@@ -160,4 +165,56 @@ model ScheduledShift {
   @@unique([eventId, userId])
   @@index([userId])
   @@map("scheduled_shifts")
+}
+
+model SopDocument {
+  id                String            @id @default(cuid())
+  title             String
+  slug              String            @unique
+  summary           String?
+  sourceType        String            @default("notion") @map("source_type")
+  notionDatabaseId  String            @map("notion_database_id")
+  notionPageId      String            @unique @map("notion_page_id")
+  notionUrl         String?           @map("notion_url")
+  status            SopDocumentStatus @default(ACTIVE)
+  lastSyncedAt      DateTime?         @map("last_synced_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  blocks            SopContentBlock[]
+  roleAccess        SopRoleAccess[]
+
+  @@index([status])
+  @@index([sourceType])
+  @@index([updatedAt])
+  @@map("sop_documents")
+}
+
+model SopContentBlock {
+  id           String      @id @default(cuid())
+  documentId   String      @map("document_id")
+  document     SopDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  blockId      String      @map("block_id")
+  parentBlockId String?    @map("parent_block_id")
+  orderIndex   Int         @map("order_index")
+  depth        Int         @default(0)
+  type         String
+  payload      Json
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@unique([documentId, blockId])
+  @@index([documentId, orderIndex])
+  @@map("sop_content_blocks")
+}
+
+model SopRoleAccess {
+  id           String      @id @default(cuid())
+  documentId   String      @map("document_id")
+  document     SopDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  role         Role
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  @@unique([documentId, role])
+  @@index([role])
+  @@map("sop_role_access")
 }

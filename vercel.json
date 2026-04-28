@@ -3,6 +3,10 @@
     {
       "path": "/api/schedule/import-starboard",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/sops/sync-notion",
+      "schedule": "15 * * * *"
     }
   ]
 }

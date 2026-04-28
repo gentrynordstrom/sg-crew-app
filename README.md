@@ -52,6 +52,9 @@ Sign in as the bootstrap admin:
 | `STARBOARD_SUBDOMAIN`       | sync only | Your Starboard subdomain (e.g. `sg`). Determines the API base URL.                             |
 | `STARBOARD_SYNC_DAYS_AHEAD` | no        | Days ahead to sync (default: `60`). Controls the Starboard import window.                      |
 | `CRON_SECRET`               | prod      | Random secret; Vercel sends it on cron invocations. Generate: `openssl rand -base64 32`.       |
+| `NOTION_API_TOKEN`          | sync only | Notion integration token used to read SOP database/pages/blocks.                                |
+| `NOTION_SOP_DATABASE_ID`    | sync only | Notion database ID containing SOP rows/pages to ingest.                                          |
+| `NOTION_SYNC_CRON_SECRET`   | prod      | Secret used by Vercel cron `Authorization: Bearer ...` for `/api/sops/sync-notion`.            |
 | `ADMIN_NAME`                | seed      | Bootstrap admin display name.                                                                  |
 | `ADMIN_PHONE`                | seed      | 10-digit phone. PIN derived from last 4.                                                       |
 | `ADMIN_PIN`                 | no        | Optional override. Must be 4 digits.                                                           |
@@ -78,8 +81,11 @@ Sign in as the bootstrap admin:
 | `/api/auth/login`   | public (POST)                | Validates PIN, issues JWT cookie, handles rate limit   |
 | `/api/auth/logout`  | any                          | Clears session cookie                                  |
 | `/`                 | any authenticated + active   | Role-based feature tiles                               |
+| `/sops`             | role-gated authenticated      | SOP list filtered by role access                       |
+| `/sops/[slug]`      | role-gated authenticated      | SOP detail with cached Notion content                  |
 | `/coming-soon`      | any authenticated + active   | Placeholder for Phase 2+ features                      |
 | `/admin/users`      | `ADMIN` only                 | Add / edit / deactivate / unlock crew                  |
+| `/admin/sops/import`| `ADMIN` only                 | Manual Notion SOP sync trigger                         |
 
 ## Auth model
 
@@ -93,7 +99,7 @@ Sign in as the bootstrap admin:
 
 1. Push the repo to GitHub.
 2. Import the repo in Vercel.
-3. Paste `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, and `NEXT_PUBLIC_APP_URL` into Vercel → Settings → Environment Variables. Set `NEXT_PUBLIC_APP_URL` to your production URL.
+3. Paste required env vars into Vercel → Settings → Environment Variables, including database/auth values plus integration values (`MONDAY_API_KEY`, Starboard vars, Notion vars, and cron secrets). Set `NEXT_PUBLIC_APP_URL` to your production URL.
 4. Deploy.
 5. The first deploy uses whatever's in your Supabase DB. Seeding is done locally — run `npm run db:seed` against the production `DATABASE_URL` once, then the bootstrap admin exists forever.
 

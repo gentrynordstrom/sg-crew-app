@@ -7,6 +7,7 @@ const TABS = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/timesheets", label: "Timesheets" },
   { href: "/admin/schedule", label: "Schedule" },
+  { href: "/admin/sops/import", label: "SOP Sync" },
 ];
 
 export function AdminNav() {

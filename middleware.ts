@@ -4,7 +4,7 @@ import { SESSION_COOKIE, verifySessionToken } from "./lib/jwt";
 const PUBLIC_PATHS = ["/login", "/api/auth/login"];
 
 // API routes that handle their own auth (cron secret or session check inside the handler)
-const PUBLIC_API_PREFIXES = ["/api/schedule/import-starboard"];
+const PUBLIC_API_PREFIXES = ["/api/schedule/import-starboard", "/api/sops/sync-notion"];
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true;
