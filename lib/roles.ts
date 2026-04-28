@@ -41,11 +41,27 @@ export type Feature =
   | "admin"
   | "admin-schedule";
 
-interface TileDef {
+export type TileGroup =
+  | "logs"
+  | "financial"
+  | "my-shift"
+  | "resources"
+  | "management";
+
+export const TILE_GROUP_LABELS: Record<TileGroup, string> = {
+  "logs": "Logs",
+  "financial": "Financial",
+  "my-shift": "My Shift",
+  "resources": "Resources",
+  "management": "Management",
+};
+
+export interface TileDef {
   feature: Feature;
   label: string;
   description: string;
   href: string;
+  group: TileGroup;
 }
 
 const ALL_TILES: TileDef[] = [
@@ -54,68 +70,85 @@ const ALL_TILES: TileDef[] = [
     label: "Cruise Log",
     description: "Captain's log entries for each cruise.",
     href: "/cruise-log",
+    group: "logs",
   },
   {
     feature: "cleaning-log",
     label: "Cleaning Log",
     description: "Track boat cleanings and turnovers.",
     href: "/cleaning-log",
+    group: "logs",
   },
   {
     feature: "maintenance-log",
     label: "Maintenance Log",
     description: "Mechanical work, repairs, and service.",
     href: "/maintenance-log",
+    group: "logs",
   },
   {
     feature: "transactions",
     label: "Transactions",
     description: "Receipts and expense tracking.",
     href: "/transactions",
+    group: "financial",
   },
   {
     feature: "drawer-close",
     label: "Drawer Close",
     description: "Close out the POS drawer at end of shift.",
     href: "/drawer-close",
+    group: "financial",
   },
   {
     feature: "time-tracking",
     label: "Time Tracking",
     description: "Clock in and out of shifts.",
     href: "/time",
+    group: "my-shift",
   },
   {
     feature: "schedule",
     label: "My Schedule",
     description: "View your upcoming shifts.",
     href: "/schedule",
-  },
-  {
-    feature: "admin-schedule",
-    label: "Scheduling",
-    description: "Build and publish the crew schedule.",
-    href: "/admin/schedule",
+    group: "my-shift",
   },
   {
     feature: "sops",
     label: "SOPs",
     description: "Standard operating procedures.",
     href: "/coming-soon",
+    group: "resources",
   },
   {
     feature: "chatbot",
     label: "Chatbot",
     description: "Ask questions about SOPs and logs.",
     href: "/coming-soon",
+    group: "resources",
+  },
+  {
+    feature: "admin-schedule",
+    label: "Scheduling",
+    description: "Build and publish the crew schedule.",
+    href: "/admin/schedule",
+    group: "management",
   },
   {
     feature: "admin",
     label: "Admin",
     description: "Manage users and roles.",
     href: "/admin/users",
+    group: "management",
   },
 ];
+
+export interface TileGroupDef {
+  group: TileGroup;
+  label: string;
+  tiles: TileDef[];
+}
 
 const ROLE_FEATURES: Record<Role, Feature[]> = {
   CAPTAIN: [
@@ -178,4 +211,17 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
 export function tilesForRole(role: Role): TileDef[] {
   const allowed = new Set(ROLE_FEATURES[role]);
   return ALL_TILES.filter((t) => allowed.has(t.feature));
+}
+
+/** Returns tiles grouped in display order, omitting empty groups. */
+export function groupedTilesForRole(role: Role): TileGroupDef[] {
+  const tiles = tilesForRole(role);
+  const groupOrder: TileGroup[] = ["my-shift", "logs", "financial", "resources", "management"];
+  return groupOrder
+    .map((group) => ({
+      group,
+      label: TILE_GROUP_LABELS[group],
+      tiles: tiles.filter((t) => t.group === group),
+    }))
+    .filter((g) => g.tiles.length > 0);
 }

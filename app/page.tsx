@@ -1,7 +1,7 @@
 import { requireActiveSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { tilesForRole } from "@/lib/roles";
-import { FeatureTile } from "@/components/FeatureTile";
+import { groupedTilesForRole } from "@/lib/roles";
+import { HomeGroups } from "@/components/HomeGroups";
 import { RoleBadge } from "@/components/RoleBadge";
 import { SignOutButton } from "@/components/SignOutButton";
 import { Logo } from "@/components/Logo";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const user = await requireActiveSession();
-  const tiles = tilesForRole(user.role);
+  const groups = groupedTilesForRole(user.role);
 
   // Fetch active shift for the time clock banner
   const activeShiftRaw = await prisma.timeEntry.findFirst({
@@ -57,19 +57,7 @@ export default async function HomePage() {
         <TimeClockBanner activeShift={activeShift} />
 
         <section>
-          <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-brand-cream-400">
-            Your tools
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {tiles.map((t) => (
-              <FeatureTile
-                key={t.feature}
-                label={t.label}
-                description={t.description}
-                href={t.href}
-              />
-            ))}
-          </div>
+          <HomeGroups groups={groups} />
         </section>
       </div>
     </main>
