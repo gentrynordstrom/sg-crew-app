@@ -37,6 +37,7 @@ export type Feature =
   | "time-tracking"
   | "schedule"
   | "sops"
+  | "emergency-contacts"
   | "chatbot"
   | "admin"
   | "admin-schedule";
@@ -122,6 +123,13 @@ const ALL_TILES: TileDef[] = [
     group: "resources",
   },
   {
+    feature: "emergency-contacts",
+    label: "Emergency Contacts",
+    description: "Critical phone numbers for urgent situations.",
+    href: "/emergency-contacts",
+    group: "resources",
+  },
+  {
     feature: "chatbot",
     label: "Chatbot",
     description: "Ask questions about SOPs and logs.",
@@ -159,6 +167,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "time-tracking",
     "schedule",
     "sops",
+    "emergency-contacts",
     "chatbot",
   ],
   DECKHAND: [
@@ -168,6 +177,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "time-tracking",
     "schedule",
     "sops",
+    "emergency-contacts",
     "chatbot",
   ],
   MECHANIC: [
@@ -176,12 +186,14 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "time-tracking",
     "schedule",
     "sops",
+    "emergency-contacts",
     "chatbot",
   ],
   NARRATOR: [
     "time-tracking",
     "schedule",
     "sops",
+    "emergency-contacts",
     "chatbot",
   ],
   HOSPITALITY: [
@@ -191,6 +203,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "time-tracking",
     "schedule",
     "sops",
+    "emergency-contacts",
     "chatbot",
   ],
   ADMIN: [
@@ -203,6 +216,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "schedule",
     "admin-schedule",
     "sops",
+    "emergency-contacts",
     "chatbot",
     "admin",
   ],
