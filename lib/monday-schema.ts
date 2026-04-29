@@ -236,4 +236,8 @@ export const TRANSACTIONS = {
 
 export const TRAINING = {
   boardId: "18410848889",
+  groupId: "topics",
+  columns: {
+    submittedBy: { id: "text_mm2w4aqt", type: "text" as const },
+  },
 } as const;

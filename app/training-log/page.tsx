@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { requireActiveSession } from "@/lib/auth";
 import { mondayQuery } from "@/lib/monday";
 import { TRAINING } from "@/lib/monday-schema";
-import { Logo } from "@/components/Logo";
-import { SignOutButton } from "@/components/SignOutButton";
+import { LogPageHeader } from "@/components/logs/LogPageHeader";
 import { ChevronRightIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +27,8 @@ function formatUpdatedAt(ts: string) {
 }
 
 export default async function TrainingLogPage() {
-  await requireActiveSession();
+  const user = await requireActiveSession();
+  const canCreate = user.role === "CAPTAIN" || user.role === "ADMIN";
 
   const query = `
     query ($boardId: ID!) {
@@ -59,24 +58,12 @@ export default async function TrainingLogPage() {
   return (
     <main className="min-h-screen bg-brand-moss-700 px-4 py-8">
       <div className="mx-auto max-w-2xl">
-        <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <Logo size={56} />
-            <div>
-              <Link
-                href="/"
-                className="text-sm text-brand-cream-400 underline-offset-4 hover:text-brand-cream-200 hover:underline"
-              >
-                ← Home
-              </Link>
-              <h1 className="mt-1 text-2xl font-semibold text-brand-cream-100">Training Log</h1>
-              <p className="text-sm text-brand-cream-400">
-                Records synced from Monday board {TRAINING.boardId}.
-              </p>
-            </div>
-          </div>
-          <SignOutButton />
-        </header>
+        <LogPageHeader
+          title="Training Log"
+          description={`Records synced from Monday board ${TRAINING.boardId}.`}
+          newHref={canCreate ? "/training-log/new" : undefined}
+          newLabel="New Entry"
+        />
 
         {loadError ? (
           <div className="rounded-2xl border border-red-500/30 bg-red-900/20 p-5 text-sm text-red-300">

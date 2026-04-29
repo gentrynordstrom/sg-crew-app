@@ -5,7 +5,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 interface LogPageHeaderProps {
   title: string;
   description: string;
-  newHref: string;
+  newHref?: string;
   newLabel?: string;
 }
 
@@ -33,12 +33,14 @@ export function LogPageHeader({
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <Link
-          href={newHref}
-          className="rounded-xl bg-brand-brass-500 px-4 py-2 text-sm font-semibold text-brand-moss-900 transition hover:bg-brand-brass-400 active:scale-[0.97]"
-        >
-          + {newLabel}
-        </Link>
+        {newHref && (
+          <Link
+            href={newHref}
+            className="rounded-xl bg-brand-brass-500 px-4 py-2 text-sm font-semibold text-brand-moss-900 transition hover:bg-brand-brass-400 active:scale-[0.97]"
+          >
+            + {newLabel}
+          </Link>
+        )}
         <SignOutButton />
       </div>
     </header>
