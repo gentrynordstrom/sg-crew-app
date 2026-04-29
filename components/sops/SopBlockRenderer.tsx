@@ -78,18 +78,6 @@ function renderBlock(block: SopBlock) {
           {renderRichText(rich)}
         </h4>
       );
-    case "bulleted_list_item":
-      return (
-        <li className="ml-6 list-disc text-sm text-brand-cream-200" style={indentStyle}>
-          {renderRichText(rich)}
-        </li>
-      );
-    case "numbered_list_item":
-      return (
-        <li className="ml-6 list-decimal text-sm text-brand-cream-200" style={indentStyle}>
-          {renderRichText(rich)}
-        </li>
-      );
     case "to_do":
       return (
         <p className="text-sm text-brand-cream-200" style={indentStyle}>
@@ -147,16 +135,64 @@ function renderBlock(block: SopBlock) {
   }
 }
 
+function isListBlockType(type: string) {
+  return type === "bulleted_list_item" || type === "numbered_list_item";
+}
+
 export function SopBlockRenderer({ blocks }: { blocks: SopBlock[] }) {
   if (!blocks.length) {
     return <p className="text-sm text-brand-cream-500">No SOP content is available yet.</p>;
   }
 
+  const rendered: React.ReactNode[] = [];
+
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    if (!isListBlockType(block.type)) {
+      rendered.push(<div key={block.id}>{renderBlock(block)}</div>);
+      continue;
+    }
+
+    const listType = block.type;
+    const listBlocks: SopBlock[] = [];
+    let j = i;
+    while (
+      j < blocks.length &&
+      blocks[j].type === listType &&
+      blocks[j].depth === block.depth
+    ) {
+      listBlocks.push(blocks[j]);
+      j++;
+    }
+
+    const ListTag = listType === "numbered_list_item" ? "ol" : "ul";
+    rendered.push(
+      <ListTag key={`${listType}-${block.id}`} className="space-y-1 text-sm text-brand-cream-200">
+        {listBlocks.map((listBlock) => {
+          const payload = listBlock.payload as any;
+          const rich = textFromPayload(payload);
+          const indentStyle =
+            listBlock.depth > 0
+              ? { paddingLeft: `${Math.min(listBlock.depth * 1.25, 3.75)}rem` }
+              : undefined;
+          return (
+            <li
+              key={listBlock.id}
+              className={listType === "numbered_list_item" ? "ml-6 list-decimal" : "ml-6 list-disc"}
+              style={indentStyle}
+            >
+              {renderRichText(rich)}
+            </li>
+          );
+        })}
+      </ListTag>
+    );
+    i = j - 1;
+  }
+
   return (
     <div className="space-y-3">
-      {blocks.map((block) => (
-        <div key={block.id}>{renderBlock(block)}</div>
-      ))}
+      {rendered}
     </div>
   );
 }
