@@ -233,3 +233,7 @@ export const TRANSACTIONS = {
     notes: { id: "long_text_mm009gnd", type: "long_text" as const },
   },
 } as const;
+
+export const TRAINING = {
+  boardId: "18410848889",
+} as const;

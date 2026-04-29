@@ -32,6 +32,7 @@ export type Feature =
   | "cruise-log"
   | "cleaning-log"
   | "maintenance-log"
+  | "training-log"
   | "transactions"
   | "drawer-close"
   | "time-tracking"
@@ -85,6 +86,13 @@ const ALL_TILES: TileDef[] = [
     label: "Maintenance Log",
     description: "Mechanical work, repairs, and service.",
     href: "/maintenance-log",
+    group: "logs",
+  },
+  {
+    feature: "training-log",
+    label: "Training Log",
+    description: "Crew training records and completion history.",
+    href: "/training-log",
     group: "logs",
   },
   {
@@ -163,6 +171,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "cruise-log",
     "cleaning-log",
     "maintenance-log",
+    "training-log",
     "transactions",
     "time-tracking",
     "schedule",
@@ -173,6 +182,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
   DECKHAND: [
     "cleaning-log",
     "maintenance-log",
+    "training-log",
     "transactions",
     "time-tracking",
     "schedule",
@@ -182,6 +192,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
   ],
   MECHANIC: [
     "maintenance-log",
+    "training-log",
     "transactions",
     "time-tracking",
     "schedule",
@@ -198,6 +209,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
   ],
   HOSPITALITY: [
     "cleaning-log",
+    "training-log",
     "drawer-close",
     "transactions",
     "time-tracking",
@@ -210,6 +222,7 @@ const ROLE_FEATURES: Record<Role, Feature[]> = {
     "cruise-log",
     "cleaning-log",
     "maintenance-log",
+    "training-log",
     "transactions",
     "drawer-close",
     "time-tracking",
