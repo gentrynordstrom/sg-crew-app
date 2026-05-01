@@ -13,6 +13,8 @@ interface TextFieldProps extends BaseProps {
   type?: "text" | "date" | "time" | "number" | "tel";
   defaultValue?: string;
   placeholder?: string;
+  step?: string;
+  min?: string;
 }
 
 interface SelectFieldProps extends BaseProps {
@@ -37,6 +39,8 @@ export function TextField({
   type = "text",
   defaultValue,
   placeholder,
+  step,
+  min,
   required,
   hint,
 }: TextFieldProps) {
@@ -52,6 +56,8 @@ export function TextField({
         type={type}
         defaultValue={defaultValue}
         placeholder={placeholder}
+        step={step}
+        min={min}
         required={required}
         className={inputClass}
       />

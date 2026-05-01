@@ -38,6 +38,7 @@ export default async function TransactionsPage() {
             name
             column_values(ids: [
               "${TRANSACTIONS.columns.date.id}",
+              "${TRANSACTIONS.columns.amount.id}",
               "${TRANSACTIONS.columns.transactionType.id}",
               "${TRANSACTIONS.columns.currency.id}",
               "${TRANSACTIONS.columns.category.id}",
@@ -91,6 +92,7 @@ export default async function TransactionsPage() {
           <ul className="space-y-3">
             {items.map((item) => {
               const date = col(item, TRANSACTIONS.columns.date.id);
+              const amount = col(item, TRANSACTIONS.columns.amount.id);
               const txType = col(item, TRANSACTIONS.columns.transactionType.id);
               const currency = col(item, TRANSACTIONS.columns.currency.id);
               const category = col(item, TRANSACTIONS.columns.category.id);
@@ -113,6 +115,7 @@ export default async function TransactionsPage() {
                       </div>
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-cream-400">
                         {date && <span>{date}</span>}
+                        {amount && <span className="font-medium text-brand-cream-200">{amount}</span>}
                         {category && <span>{category}</span>}
                         {currency && <span>{currency}</span>}
                         {person && <span>{person}</span>}

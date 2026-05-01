@@ -22,6 +22,7 @@ export default async function TransactionDetailPage({
 
   const fields = [
     { label: "Date", value: col(TRANSACTIONS.columns.date.id) },
+    { label: "Amount", value: col(TRANSACTIONS.columns.amount.id) },
     { label: "Type", value: col(TRANSACTIONS.columns.transactionType.id) },
     { label: "Payment Method", value: col(TRANSACTIONS.columns.currency.id) },
     { label: "Category", value: col(TRANSACTIONS.columns.category.id) },

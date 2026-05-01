@@ -12,6 +12,7 @@ import {
   longTextValue,
   dropdownValue,
   formatMdy,
+  numberValue,
 } from "@/lib/monday-values";
 
 export async function createTransactionEntry(
@@ -27,6 +28,11 @@ export async function createTransactionEntry(
   const payeePayer = (fd.get("payeePayer") as string) ?? "";
   const category = (fd.get("category") as string) ?? "";
   const notes = (fd.get("notes") as string) ?? "";
+  const amountRaw = ((fd.get("amount") as string) ?? "").trim().replace(/,/g, "");
+  const amountNum = amountRaw === "" ? NaN : Number.parseFloat(amountRaw);
+  if (!Number.isFinite(amountNum)) {
+    return { error: "Amount is required and must be a valid number." };
+  }
 
   const itemName = transactionName && date
     ? `${transactionName} - ${formatMdy(date)}`
@@ -35,6 +41,7 @@ export async function createTransactionEntry(
   const columnValues = buildColumnValues({
     [TRANSACTIONS.columns.date.id]: date ? dateValue(date) : undefined,
     [TRANSACTIONS.columns.transactionName.id]: transactionName ? textValue(transactionName) : undefined,
+    [TRANSACTIONS.columns.amount.id]: numberValue(amountNum),
     [TRANSACTIONS.columns.currency.id]: currency ? dropdownValue([currency]) : undefined,
     [TRANSACTIONS.columns.transactionType.id]: transactionType ? dropdownValue([transactionType]) : undefined,
     [TRANSACTIONS.columns.person.id]: person ? dropdownValue([person]) : undefined,

@@ -188,6 +188,7 @@ export const TRANSACTIONS = {
     receipts: { id: "file_mm00sn82", type: "file" as const },
     date: { id: "date_mm00t8aw", type: "date" as const },
     transactionName: { id: "text_mm0066ar", type: "text" as const },
+    amount: { id: "numeric_mm2qje00", type: "numbers" as const },
     currency: {
       id: "dropdown_mm00waad",
       type: "dropdown" as const,

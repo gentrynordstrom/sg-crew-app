@@ -75,6 +75,16 @@ export function TransactionForm({ defaultDate, defaultPerson }: TransactionFormP
         required
       />
 
+      <TextField
+        name="amount"
+        label="Amount"
+        type="number"
+        placeholder="0.00"
+        step="0.01"
+        hint="Total dollar amount for this transaction."
+        required
+      />
+
       <div className="grid grid-cols-2 gap-4">
         <SelectField
           name="transactionType"
