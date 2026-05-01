@@ -4,6 +4,8 @@ import { mondayUploadFile } from "@/lib/monday";
 import { downloadStorageObject } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
+/** Allow slow receipt uploads (Supabase → Vercel → Monday multipart). */
+export const maxDuration = 60;
 
 /**
  * POST { itemId, columnId, supabasePath }
