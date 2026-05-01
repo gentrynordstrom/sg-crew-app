@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { mondayUploadFile } from "@/lib/monday";
+import { prepareFileForMondayUpload } from "@/lib/prepare-monday-upload";
 import { downloadStorageObject } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -55,7 +56,13 @@ export async function POST(req: NextRequest) {
             : lower.endsWith(".jpg") || lower.endsWith(".jpeg")
               ? "image/jpeg"
               : "application/octet-stream";
-  const file = new File([blob], filename, { type: blob.type || mimeFromName });
+  let file: File;
+  try {
+    file = await prepareFileForMondayUpload(blob, filename, blob.type || mimeFromName);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 
   try {
     await mondayUploadFile(itemId, columnId, file);

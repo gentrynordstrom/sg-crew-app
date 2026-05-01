@@ -52,6 +52,7 @@ function sleep(ms: number): Promise<void> {
 
 function isRetryableMondayUploadError(message: string): boolean {
   const m = message.toLowerCase();
+  if (m.includes("413") || m.includes("payload too large")) return false;
   return (
     m.includes("503") ||
     m.includes("502") ||
