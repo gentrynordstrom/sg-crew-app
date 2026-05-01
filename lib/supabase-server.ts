@@ -36,10 +36,17 @@ export async function createSignedUploadUrl(path: string) {
 }
 
 /**
- * Returns the permanent public URL for a stored file.
+ * Returns a short-lived signed read URL for a stored file.
  */
-export function getPublicUrl(path: string) {
+export async function createSignedReadUrl(path: string, expiresIn = 60) {
   const supabase = getClient();
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, expiresIn);
+
+  if (error || !data?.signedUrl) {
+    throw new Error(error?.message ?? "Could not create signed read URL");
+  }
+
+  return data.signedUrl;
 }

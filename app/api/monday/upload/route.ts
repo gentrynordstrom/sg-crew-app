@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { mondayUploadFile } from "@/lib/monday";
-import { getPublicUrl } from "@/lib/supabase-server";
+import { createSignedReadUrl } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -30,10 +30,11 @@ export async function POST(req: NextRequest) {
   }
 
   // Fetch the file from Supabase Storage (server-to-server — no size limit)
-  const publicUrl = getPublicUrl(supabasePath);
+  let readUrl: string;
   let fileRes: Response;
   try {
-    fileRes = await fetch(publicUrl);
+    readUrl = await createSignedReadUrl(supabasePath, 120);
+    fileRes = await fetch(readUrl);
     if (!fileRes.ok) throw new Error(`Supabase fetch failed: ${fileRes.status}`);
   } catch (e) {
     return NextResponse.json(
