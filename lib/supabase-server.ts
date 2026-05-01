@@ -7,7 +7,11 @@ const SUPABASE_URL =
 
 function getClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
+  if (!serviceKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is not set. Add it to .env.local for dev and to Vercel → Settings → Environment Variables for production (same Supabase project as DATABASE_URL). Copy from Supabase → Project Settings → API → service_role (secret)."
+    );
+  }
   return createClient(SUPABASE_URL, serviceKey, {
     auth: { persistSession: false },
   });
