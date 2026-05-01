@@ -36,17 +36,13 @@ export async function createSignedUploadUrl(path: string) {
 }
 
 /**
- * Returns a short-lived signed read URL for a stored file.
+ * Download an object using the service role (works regardless of bucket public/private).
  */
-export async function createSignedReadUrl(path: string, expiresIn = 60) {
+export async function downloadStorageObject(path: string): Promise<Blob> {
   const supabase = getClient();
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, expiresIn);
-
-  if (error || !data?.signedUrl) {
-    throw new Error(error?.message ?? "Could not create signed read URL");
+  const { data, error } = await supabase.storage.from(BUCKET).download(path);
+  if (error || !data) {
+    throw new Error(error?.message ?? "Could not download file from storage");
   }
-
-  return data.signedUrl;
+  return data;
 }

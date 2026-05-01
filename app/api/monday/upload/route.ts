@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { mondayUploadFile } from "@/lib/monday";
-import { createSignedReadUrl } from "@/lib/supabase-server";
+import { downloadStorageObject } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -29,13 +29,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing itemId, columnId, or supabasePath" }, { status: 400 });
   }
 
-  // Fetch the file from Supabase Storage (server-to-server — no size limit)
-  let readUrl: string;
-  let fileRes: Response;
+  let blob: Blob;
   try {
-    readUrl = await createSignedReadUrl(supabasePath, 120);
-    fileRes = await fetch(readUrl);
-    if (!fileRes.ok) throw new Error(`Supabase fetch failed: ${fileRes.status}`);
+    blob = await downloadStorageObject(supabasePath);
   } catch (e) {
     return NextResponse.json(
       { error: `Could not fetch file from storage: ${e instanceof Error ? e.message : e}` },
@@ -43,10 +39,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Convert to a File object for mondayUploadFile
-  const blob = await fileRes.blob();
   const filename = supabasePath.split("/").pop() ?? "upload";
-  const file = new File([blob], filename, { type: blob.type });
+  const lower = filename.toLowerCase();
+  const mimeFromName =
+    lower.endsWith(".pdf")
+      ? "application/pdf"
+      : lower.endsWith(".png")
+        ? "image/png"
+        : lower.endsWith(".gif")
+          ? "image/gif"
+          : lower.endsWith(".webp")
+            ? "image/webp"
+            : lower.endsWith(".jpg") || lower.endsWith(".jpeg")
+              ? "image/jpeg"
+              : "application/octet-stream";
+  const file = new File([blob], filename, { type: blob.type || mimeFromName });
 
   try {
     await mondayUploadFile(itemId, columnId, file);

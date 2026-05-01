@@ -12,8 +12,8 @@ export async function GET(req: NextRequest) {
   const filename = searchParams.get("filename") ?? "upload";
   const ext = filename.includes(".") ? filename.split(".").pop() : "bin";
 
-  // Unique path: logs/<userId>/<timestamp>.<ext>
-  const path = `logs/${session.userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  // Unique path: logs/<userId>/<timestamp>.<ext> (JWT stores user id on `sub`)
+  const path = `logs/${session.sub}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
   try {
     const result = await createSignedUploadUrl(path);

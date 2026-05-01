@@ -17,7 +17,7 @@ export async function uploadFileToMonday(
   if (file.size === 0) return null;
 
   // ── Step 1: get a presigned Supabase upload URL ───────────────────────────
-  let presignData: { signedUrl: string; path: string };
+  let presignData: { signedUrl: string; path: string; token?: string };
   try {
     const presignRes = await fetch(
       `/api/upload/presign?filename=${encodeURIComponent(file.name)}`
@@ -35,9 +35,15 @@ export async function uploadFileToMonday(
   // This request goes to supabase.co, NOT through our Vercel function,
   // so there is no 4.5 MB limit on it.
   try {
+    const contentType = file.type || "application/octet-stream";
+    const putHeaders: Record<string, string> = { "Content-Type": contentType };
+    // Supabase signed upload URLs require this header on PUT (Storage API v3+).
+    if (presignData.token) {
+      putHeaders.Authorization = `Bearer ${presignData.token}`;
+    }
     const putRes = await fetch(presignData.signedUrl, {
       method: "PUT",
-      headers: { "Content-Type": file.type },
+      headers: putHeaders,
       body: file,
     });
     if (!putRes.ok) {

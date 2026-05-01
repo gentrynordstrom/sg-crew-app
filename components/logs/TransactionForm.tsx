@@ -33,7 +33,10 @@ export function TransactionForm({ defaultDate, defaultPerson }: TransactionFormP
       if (validReceipts.length > 0) {
         const errs = await uploadFilesToMonday(result.itemId, TRANSACTIONS.columns.receipts.id, validReceipts);
         if (errs.length > 0) {
-          setUploadWarning(`Entry saved, but ${errs.length} file(s) could not be attached.`);
+          const detail = errs[0]?.slice(0, 280) ?? "";
+          setUploadWarning(
+            `Entry saved, but ${errs.length} file(s) could not be attached.${detail ? ` ${detail}` : ""}`
+          );
           await new Promise((r) => setTimeout(r, 3000));
         }
       }
