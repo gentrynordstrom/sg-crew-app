@@ -237,8 +237,11 @@ export const TRANSACTIONS = {
 
 export const TRAINING = {
   boardId: "18410848889",
+  /** Legacy default; `create_item` uses `resolveGroupIdFromSnapshot` + `MONDAY_TRAINING_GROUP_ID`. */
   groupId: "topics",
   columns: {
     submittedBy: { id: "text_mm2w4aqt", type: "text" as const },
+    trainingType: { id: "dropdown_mm2wwq7f", type: "dropdown" as const },
+    attachments: { id: "file_mm31a1xr", type: "file" as const },
   },
 } as const;

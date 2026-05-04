@@ -46,6 +46,7 @@ Sign in as the bootstrap admin:
 | `JWT_SECRET`                | yes       | 32+ char random string. Generate: `openssl rand -base64 48`.                                   |
 | `NEXT_PUBLIC_APP_URL`       | yes       | `http://localhost:3000` locally; Vercel production URL in prod.                                |
 | `MONDAY_API_KEY`            | yes       | Monday.com API token. Used for all log entries.                                                |
+| `MONDAY_TRAINING_GROUP_ID`  | no        | Monday **group id** (not title) for new rows on the training board. If unset, the app picks a group by title heuristics, then the first group. |
 | `SUPABASE_URL`              | yes       | Supabase project URL (`https://<project>.supabase.co`). Used for file storage.                 |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes       | Supabase service role key. Used server-side for storage and presigned URL generation.           |
 | `STARBOARD_API_TOKEN`       | sync only | Bearer token from Starboard Suite dashboard (1Password). Required for cruise event sync.        |
